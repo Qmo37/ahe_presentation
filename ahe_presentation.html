@@ -43,7 +43,7 @@
             color: #e2e8f0;
             min-height: 100vh;
             overflow: hidden;
-            font-size: clamp(16px, 1.8vmin, 24px);
+            font-size: clamp(22px, 3vmin, 36px);
         }
 
         /* Slide container */
@@ -59,7 +59,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            padding: 40px 60px;
+            padding: 30px 50px;
             display: none;
             flex-direction: column;
             opacity: 0;
@@ -79,7 +79,7 @@
             left: 0;
             right: 0;
             background: rgba(15, 12, 41, 0.95);
-            padding: 15px 30px;
+            padding: 5px 15px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -95,8 +95,7 @@
         .nav-btn {
             padding: 10px 20px;
             border: none;
-            border-radius: 8px;
-            font-size: 0.9em;
+            font-size: 0.7em;
             cursor: pointer;
             transition: all 0.3s ease;
             font-weight: 600;
@@ -128,7 +127,7 @@
 
         .progress-bar {
             flex: 1;
-            height: 6px;
+            height: 3px;
             background: rgba(255, 255, 255, 0.2);
             border-radius: 3px;
             overflow: hidden;
@@ -142,7 +141,7 @@
 
         .slide-counter {
             color: #a0aec0;
-            font-size: 0.9em;
+            font-size: 0.7em;
             min-width: 60px;
             text-align: center;
         }
@@ -152,7 +151,7 @@
             justify-content: center;
             align-items: center;
             text-align: center;
-            padding-bottom: 100px;
+            padding-bottom: 50px;
         }
 
         .paper-title {
@@ -203,7 +202,7 @@
 
         /* Content slides */
         .slide-header {
-            margin-bottom: 30px;
+            margin-bottom: 15px;
         }
 
         .slide-number {
@@ -213,7 +212,7 @@
         }
 
         .slide-title {
-            font-size: 2em;
+            font-size: 2.2em;
             font-weight: 700;
             background: linear-gradient(135deg, #a78bfa, #60a5fa);
             -webkit-background-clip: text;
@@ -226,19 +225,19 @@
             display: flex;
             flex-direction: column;
             gap: 20px;
-            padding-bottom: 80px;
+            padding-bottom: 20px;
         }
 
         /* Cards and boxes */
         .card {
             background: rgba(30, 41, 59, 0.8);
             border-radius: 16px;
-            padding: 25px;
+            padding: 20px;
             border: 1px solid rgba(148, 163, 184, 0.2);
         }
 
         .card-title {
-            font-size: 1.1em;
+            font-size: 1.4em;
             font-weight: 600;
             color: #a78bfa;
             margin-bottom: 15px;
@@ -254,7 +253,7 @@
             border: 1px solid rgba(167, 139, 250, 0.3);
             border-radius: 12px;
             padding: 20px;
-            margin: 15px 0;
+            margin: 10px 0;
         }
 
         .success-box {
@@ -276,13 +275,13 @@
             background: #0f172a;
             border-radius: 12px;
             padding: 20px 25px;
-            margin: 15px 0;
+            margin: 10px 0;
             text-align: center;
             border: 1px solid rgba(100, 116, 139, 0.3);
         }
 
         .equation-label {
-            font-size: 0.85em;
+            font-size: 1.1em;
             color: #34d399;
             margin-bottom: 10px;
             font-weight: 600;
@@ -293,7 +292,7 @@
             width: 100%;
             border-collapse: collapse;
             margin: 15px 0;
-            font-size: 0.95em;
+            font-size: 1.1em;
         }
 
         th,
@@ -345,7 +344,7 @@
         .two-column {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 25px;
+            gap: 15px;
         }
 
         .three-column {
@@ -1405,18 +1404,6 @@
                         </div>
                     </div>
                 </div>
-
-                <div class="warning-box" style="margin-top: 20px">
-                    <strong>Huang's Limitation:</strong> Still processes
-                    pixels <em>one by one</em>. Each pixel requires a random
-                    memory access (H[g] where g depends on pixel value). At
-                    r=300, that's still 1,202 scattered memory operations
-                    per slide.
-                    <p style="margin-top: 10px">
-                        <strong>Question:</strong> Can we avoid touching
-                        individual pixels entirely?
-                    </p>
-                </div>
             </div>
         </div>
 
@@ -1588,7 +1575,7 @@
                                                 margin-bottom: 0;
                                             ">
                                         <div style="
-                                                    font-size: 0.85em;
+                                                    font-size: 1em;
                                                     color: #94a3b8;
                                                     margin-bottom: 8px;
                                                 ">
@@ -1614,7 +1601,7 @@
                                                 flex: 1;
                                             ">
                                         <div style="
-                                                    font-size: 0.85em;
+                                                    font-size: 1em;
                                                     color: #94a3b8;
                                                     margin-bottom: 10px;
                                                     text-align: center;
@@ -3116,9 +3103,9 @@
                 }
 
                 function fitContentToSlide() {
-                    const navHeight = document.querySelector('.nav-bar').offsetHeight;
+                    const nav = document.querySelector('.nav-bar');
+                    const navHeight = nav ? nav.offsetHeight : 0;
                     const windowHeight = window.innerHeight;
-                    const availableHeight = windowHeight - navHeight - 100; // 100px buffer for padding
 
                     const slide = document.querySelector('.slide.active');
                     if (!slide) return;
@@ -3126,21 +3113,42 @@
                     const content = slide.querySelector('.slide-content');
                     if (!content) return;
 
+                    // Get slide padding
+                    const slideStyle = window.getComputedStyle(slide);
+                    const slidePaddingTop = parseFloat(slideStyle.paddingTop) || 0;
+                    const slidePaddingBottom = parseFloat(slideStyle.paddingBottom) || 0;
+
+                    // Get header height
+                    const header = slide.querySelector('.slide-header');
+                    const headerHeight = header ? header.offsetHeight : 0;
+
+                    // Calculate actual available height for content
+                    const availableHeight = windowHeight - navHeight - slidePaddingTop - slidePaddingBottom - headerHeight - 20;
+
                     // Reset to natural size to measure
                     content.style.transform = 'none';
                     content.style.width = '100%';
 
-                    const contentHeight = content.scrollHeight;
+                    // Use requestAnimationFrame to ensure DOM has settled before measuring
+                    requestAnimationFrame(() => {
+                        const contentStyle = window.getComputedStyle(content);
+                        const contentPaddingBottom = parseFloat(contentStyle.paddingBottom) || 0;
+                        const contentHeight = content.scrollHeight - contentPaddingBottom;
 
-                    if (contentHeight > availableHeight) {
-                        const scale = availableHeight / contentHeight;
-                        content.style.transformOrigin = 'top left';
-                        content.style.transform = `scale(${scale})`;
-                        content.style.width = `calc(100% / ${scale})`;
-                    } else {
-                        content.style.transform = 'none';
-                        content.style.width = '100%';
-                    }
+                        // Debug: log to console
+                        console.log(`Slide scaling: windowHeight=${windowHeight}, navHeight=${navHeight}, headerHeight=${headerHeight}, availableHeight=${availableHeight}, contentHeight=${contentHeight}`);
+
+                        if (contentHeight > availableHeight && availableHeight > 0) {
+                            const scale = availableHeight / contentHeight;
+                            console.log(`Applying scale: ${scale}`);
+                            content.style.transformOrigin = 'top left';
+                            content.style.transform = `scale(${scale})`;
+                            content.style.width = `calc(100% / ${scale})`;
+                        } else {
+                            content.style.transform = 'none';
+                            content.style.width = '100%';
+                        }
+                    });
                 }
 
                 window.addEventListener('resize', fitContentToSlide);
