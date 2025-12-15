@@ -3103,94 +3103,110 @@
                 }
 
                 function fitContentToSlide() {
-                    const nav = document.querySelector('.nav-bar');
-                    const navHeight = nav ? nav.offsetHeight : 0;
-                    const windowHeight = window.innerHeight;
+                    try {
+                        console.log("Scaling Start");
+                        const nav = document.querySelector('.nav-bar');
+                        const navHeight = nav ? nav.offsetHeight : 0;
+                        const windowHeight = window.innerHeight;
 
-                    const slide = document.querySelector('.slide.active');
-                    if (!slide) return;
-
-                    const content = slide.querySelector('.slide-content');
-                    if (!content) return;
-
-                    // Get slide padding
-                    const slideStyle = window.getComputedStyle(slide);
-                    const slidePaddingTop = parseFloat(slideStyle.paddingTop) || 0;
-                    const slidePaddingBottom = parseFloat(slideStyle.paddingBottom) || 0;
-
-                    // Get header height
-                    const header = slide.querySelector('.slide-header');
-                    const headerHeight = header ? header.offsetHeight : 0;
-
-                    // Calculate actual available height for content
-                    const availableHeight = windowHeight - navHeight - slidePaddingTop - slidePaddingBottom - headerHeight - 20;
-
-                    // Reset to natural size to measure first
-                    content.style.transform = 'none';
-                    content.style.width = '100%';
-
-                    // Use requestAnimationFrame to ensure DOM has settled
-                    requestAnimationFrame(() => {
-                        // Initial measurement
-                        let contentStyle = window.getComputedStyle(content);
-                        let contentPaddingBottom = parseFloat(contentStyle.paddingBottom) || 0;
-                        let contentHeight = content.scrollHeight - contentPaddingBottom;
-
-                        console.log(`Initial: available=${availableHeight}, content=${contentHeight}`);
-
-                        // If content fits, no need to scale (or maybe scale up slightly? for now let's just handle overflow)
-                        if (contentHeight <= availableHeight) {
-                            content.style.transform = 'none';
-                            content.style.width = '100%';
+                        const slide = document.querySelector('.slide.active');
+                        if (!slide) {
+                            console.log("Scaling Skipped: No active slide");
                             return;
                         }
 
-                        // Iterative approach to find best scale
-                        // We want: scale * height(width/scale) <= availableHeight
-                        // Heuristic loop
-                        let scale = availableHeight / contentHeight;
+                        const content = slide.querySelector('.slide-content');
+                        if (!content) {
+                            console.log("Scaling Skipped: No content");
+                            return;
+                        }
 
-                        // Limit iterations to prevent infinite loops / performance issues
-                        const maxIterations = 5;
+                        // Get slide padding
+                        const slideStyle = window.getComputedStyle(slide);
+                        const slidePaddingTop = parseFloat(slideStyle.paddingTop) || 0;
+                        const slidePaddingBottom = parseFloat(slideStyle.paddingBottom) || 0;
 
-                        function refineScale(iteration) {
-                            if (iteration >= maxIterations) return;
+                        // Get header height
+                        const header = slide.querySelector('.slide-header');
+                        const headerHeight = header ? header.offsetHeight : 0;
 
-                            // Apply current guess
-                            content.style.transformOrigin = 'top left';
-                            content.style.transform = `scale(${scale})`;
-                            content.style.width = `calc(100% / ${scale})`;
+                        // Calculate actual available height for content
+                        const availableHeight = windowHeight - navHeight - slidePaddingTop - slidePaddingBottom - headerHeight - 20;
 
-                            // Measure new height involved with this width
-                            requestAnimationFrame(() => {
-                                const newHeight = content.scrollHeight - contentPaddingBottom;
-                                const visualHeight = newHeight * scale;
-                                console.log(`Iter ${iteration}: scale=${scale}, newHeight=${newHeight}, visualHeight=${visualHeight}, target=${availableHeight}`);
+                        // Reset to natural size to measure first
+                        content.style.transform = 'none';
+                        content.style.width = '100%';
 
-                                // Tolerance of px
-                                if (Math.abs(visualHeight - availableHeight) < 5) {
-                                    console.log("Converged!");
+                        // Use requestAnimationFrame to ensure DOM has settled
+                        requestAnimationFrame(() => {
+                            try {
+                                if (!document.contains(content)) return;
+
+                                // Initial measurement
+                                let contentStyle = window.getComputedStyle(content);
+                                let contentPaddingBottom = parseFloat(contentStyle.paddingBottom) || 0;
+                                let contentHeight = content.scrollHeight - contentPaddingBottom;
+
+                                console.log(`Initial: available=${availableHeight}, content=${contentHeight}`);
+
+                                // If content fits, no need to scale
+                                if (contentHeight <= availableHeight) {
+                                    content.style.transform = 'none';
+                                    content.style.width = '100%';
+                                    console.log("Scaling Applied: None (Fits)");
                                     return;
                                 }
 
-                                // If visual height < available (gap), we can increase scale
-                                // If visual height > available (overflow), we must decrease scale
-                                // New guess: scale = scale * (available / visualHeight) 
-                                // But be careful of oscillation. 
-                                // If we have gap (visual < available), increasing scale decreases width -> increases height. 
-                                // So visual height increases by BOTH scale increase AND height increase. 
-                                // Standard proportion might overshoot. Let's dampen.
+                                // Iterative approach to find best scale
+                                let scale = availableHeight / contentHeight;
+                                const maxIterations = 5;
 
-                                const ratio = availableHeight / visualHeight;
-                                // Dampen the adjustment
-                                scale = scale * (1 + (ratio - 1) * 0.5);
+                                function refineScale(iteration) {
+                                    if (!document.contains(content)) return;
 
-                                refineScale(iteration + 1);
-                            });
-                        }
+                                    if (iteration >= maxIterations) {
+                                        console.log("Scaling Applied: Converged (Max Iterations)");
+                                        return;
+                                    }
 
-                        refineScale(0);
-                    });
+                                    // Apply current guess
+                                    content.style.transformOrigin = 'top left';
+                                    content.style.transform = `scale(${scale})`;
+                                    content.style.width = `calc(100% / ${scale})`;
+
+                                    // Measure new height involved with this width
+                                    requestAnimationFrame(() => {
+                                        try {
+                                            const newHeight = content.scrollHeight - contentPaddingBottom;
+                                            const visualHeight = newHeight * scale;
+                                            console.log(`Iter ${iteration}: scale=${scale}, newHeight=${newHeight}, visualHeight=${visualHeight}, target=${availableHeight}`);
+
+                                            // Tolerance of 5px
+                                            if (Math.abs(visualHeight - availableHeight) < 5) {
+                                                console.log("Scaling Applied: Converged!");
+                                                return;
+                                            }
+
+                                            // Refine guess
+                                            const ratio = availableHeight / visualHeight;
+                                            // Dampen the adjustment
+                                            scale = scale * (1 + (ratio - 1) * 0.5);
+
+                                            refineScale(iteration + 1);
+                                        } catch (e) {
+                                            console.error("Error in refinement loop:", e);
+                                        }
+                                    });
+                                }
+
+                                refineScale(0);
+                            } catch (e) {
+                                console.error("Error inside RAF:", e);
+                            }
+                        });
+                    } catch (e) {
+                        console.error("Error in fitContentToSlide:", e);
+                    }
                 }
 
                 window.addEventListener('resize', fitContentToSlide);
@@ -3879,6 +3895,16 @@
                 }
 
                 // ==================== SLIDE 05 FUNCTIONS ====================
+                // Animation phases for slide 05 (like perreault_detailed.html)
+                const PHASE05_INIT = 'init';
+                const PHASE05_SHOW_WINDOW = 'show_window';
+                const PHASE05_READY = 'ready';
+                const PHASE05_HIGHLIGHT_REMOVE = 'highlight_remove';
+                const PHASE05_DO_SUBTRACT = 'do_subtract';
+                const PHASE05_HIGHLIGHT_ADD = 'highlight_add';
+                const PHASE05_DO_ADD = 'do_add';
+                const PHASE05_COMPLETE = 'complete';
+
                 const slide05 = {
                     ROWS: 5,
                     COLS: 7,
@@ -3894,6 +3920,8 @@
                     opSubtract: 0,
                     opAdd: 0,
                     slideCount: 0,
+                    currentPhase: PHASE05_INIT,
+                    completed: false,
                 };
 
                 function initSlide05() {
@@ -3927,6 +3955,8 @@
                     slide05.slideCount = 0;
                     slide05.removingCol = null;
                     slide05.addingCol = null;
+                    slide05.currentPhase = PHASE05_INIT;
+                    slide05.completed = false;
 
                     // Generate random image data
                     slide05.imageData = [];
@@ -4025,6 +4055,9 @@
                     initSlide05Breakdown();
 
                     updateSlide05Display();
+
+                    // Trigger auto-scaling after content is built
+                    setTimeout(fitContentToSlide, 10);
                 }
 
                 function initSlide05Breakdown() {
@@ -4045,6 +4078,40 @@
                     updateSlide05Breakdown();
                 }
 
+                function updateSlide05Equation(removingCol = -1, addingCol = -1) {
+                    const eqDisplay = document.getElementById(
+                        "slide05-equation-display",
+                    );
+                    if (!eqDisplay) return;
+
+                    const { centerCol, RADIUS } = slide05;
+                    let html = '<span style="color:#a78bfa">H</span> = ';
+
+                    const leftCol = centerCol - RADIUS;
+                    const rightCol = centerCol + RADIUS;
+
+                    if (removingCol >= 0 && addingCol >= 0) {
+                        // Show the update equation
+                        html =
+                            '<span style="color:#a78bfa">H<sub>new</sub></span> = ';
+                        html +=
+                            '<span style="color:#a78bfa">H<sub>old</sub></span> ';
+                        html += `<span style="color:#64748b; margin:0 5px;">−</span> <span style="color:#f87171">h<sub>${removingCol}</sub></span> `;
+                        html += `<span style="color:#64748b; margin:0 5px;">+</span> <span style="color:#60a5fa">h<sub>${addingCol}</sub></span>`;
+                    } else {
+                        // Show current sum
+                        const terms = [];
+                        for (let c = leftCol; c <= rightCol; c++) {
+                            terms.push(`h<sub>${c}</sub>`);
+                        }
+                        html += terms.join(
+                            ' <span style="color:#64748b; margin:0 5px;">+</span> ',
+                        );
+                    }
+
+                    eqDisplay.innerHTML = html;
+                }
+
                 function updateSlide05Breakdown() {
                     const {
                         COLS,
@@ -4053,6 +4120,9 @@
                         L,
                         colHistograms,
                         kernelHistogram,
+                        removingCol,
+                        addingCol,
+                        currentPhase
                     } = slide05;
 
                     for (let g = 0; g < L; g++) {
@@ -4062,27 +4132,60 @@
                         if (!row) continue;
 
                         let html = `<span style="color:#94a3b8; min-width:40px;">H[${g}] =</span>`;
-                        const values = [];
-                        let sum = 0;
 
-                        for (
-                            let c = centerCol - RADIUS;
-                            c <= centerCol + RADIUS;
-                            c++
-                        ) {
-                            if (c >= 0 && c < COLS) {
-                                const val = colHistograms[c][g];
-                                sum += val;
-                                values.push(
-                                    `<span style="background:rgba(99, 102, 241, 0.3); padding:1px 5px; border-radius:3px; min-width:16px; text-align:center;">${val}</span>`,
-                                );
+                        // We only show the update dynamic breakdown if we are in an update phase where both are identified
+                        // logic: if removingCol and addingCol are set, show the math.
+
+                        if (removingCol !== null && addingCol !== null) {
+                            let valScale = "background:rgba(99, 102, 241, 0.3); padding:1px 5px; border-radius:3px; min-width:16px; text-align:center;";
+
+                            const rCal = removingCol;
+                            const aCol = addingCol;
+                            const valRem = (rCal >= 0 && rCal < COLS) ? colHistograms[rCal][g] : 0;
+                            const valAdd = (aCol >= 0 && aCol < COLS) ? colHistograms[aCol][g] : 0;
+                            const currentH = kernelHistogram[g];
+
+                            let displayOld = 0;
+                            if (currentPhase === PHASE05_HIGHLIGHT_REMOVE) {
+                                displayOld = currentH;
+                            } else if (currentPhase === PHASE05_HIGHLIGHT_ADD || currentPhase === PHASE05_DO_SUBTRACT) {
+                                displayOld = currentH + valRem;
+                            } else {
+                                displayOld = currentH - valAdd + valRem;
                             }
+
+                            html += `<div style="display:flex; align-items:center; gap:2px;">`;
+                            html += `<span style="${valScale}">${displayOld}</span>`;
+                            html += `<span style="color:#f87171; margin:0 2px;">−</span>`;
+                            html += `<span style="${valScale} border:1px solid #f87171;">${valRem}</span>`;
+                            html += `<span style="color:#60a5fa; margin:0 2px;">+</span>`;
+                            html += `<span style="${valScale} border:1px solid #60a5fa;">${valAdd}</span>`;
+                            html += `<span style="color:#64748b; margin:0 2px;">=</span>`;
+                            html += `<span style="color:#fbbf24; font-weight:600;">${displayOld - valRem + valAdd}</span>`;
+                            html += `</div>`;
+                        } else {
+                            // Standard Sum breakdown
+                            const values = [];
+                            let sum = 0;
+                            for (
+                                let c = centerCol - RADIUS;
+                                c <= centerCol + RADIUS;
+                                c++
+                            ) {
+                                if (c >= 0 && c < COLS) {
+                                    const val = colHistograms[c][g];
+                                    sum += val;
+                                    values.push(
+                                        `<span style="background:rgba(99, 102, 241, 0.3); padding:1px 5px; border-radius:3px; min-width:16px; text-align:center;">${val}</span>`,
+                                    );
+                                }
+                            }
+                            html += values.join(
+                                '<span style="color:#64748b;">+</span>',
+                            );
+                            html += `<span style="color:#64748b;">=</span><span style="color:#fbbf24; font-weight:600;">${sum}</span>`;
                         }
 
-                        html += values.join(
-                            '<span style="color:#64748b;">+</span>',
-                        );
-                        html += `<span style="color:#64748b;">=</span><span style="color:#fbbf24; font-weight:600;">${sum}</span>`;
                         row.innerHTML = html;
                     }
                 }
@@ -4112,6 +4215,7 @@
                         centerCol,
                         removingCol,
                         addingCol,
+                        currentPhase
                     } = slide05;
 
                     for (let i = 0; i < ROWS; i++) {
@@ -4151,16 +4255,29 @@
                         const colHist = document.getElementById(`col05-hist-${c}`);
                         const label = document.getElementById(`col05-label-${c}`);
                         if (!colHist) continue;
-                        const inWindow =
-                            c >= centerCol - RADIUS && c <= centerCol + RADIUS;
-                        colHist.style.background = inWindow
-                            ? "rgba(74, 222, 128, 0.2)"
-                            : "#1e293b";
-                        colHist.style.border = inWindow
-                            ? "1px solid #4ade80"
-                            : "none";
-                        if (label)
-                            label.style.color = inWindow ? "#4ade80" : "#64748b";
+
+                        const inWindow = c >= centerCol - RADIUS && c <= centerCol + RADIUS;
+                        const isRemovingCol = removingCol !== null && c === removingCol;
+                        const isAddingCol = addingCol !== null && c === addingCol;
+
+                        // Set column histogram styling based on state
+                        if (isRemovingCol) {
+                            colHist.style.background = "rgba(248, 113, 113, 0.2)";
+                            colHist.style.border = "1px solid #f87171";
+                            if (label) label.style.color = "#f87171";
+                        } else if (isAddingCol) {
+                            colHist.style.background = "rgba(96, 165, 250, 0.2)";
+                            colHist.style.border = "1px solid #60a5fa";
+                            if (label) label.style.color = "#60a5fa";
+                        } else if (inWindow) {
+                            colHist.style.background = "rgba(74, 222, 128, 0.2)";
+                            colHist.style.border = "1px solid #4ade80";
+                            if (label) label.style.color = "#4ade80";
+                        } else {
+                            colHist.style.background = "#1e293b";
+                            colHist.style.border = "none";
+                            if (label) label.style.color = "#64748b";
+                        }
                     }
 
                     const maxH = Math.max(...slide05.kernelHistogram, 1);
@@ -4169,14 +4286,6 @@
                         if (bar)
                             bar.style.height = `${(slide05.kernelHistogram[g] / maxH) * 100}px`;
                     }
-
-                    const inWindowCols = [];
-                    for (let c = centerCol - RADIUS; c <= centerCol + RADIUS; c++) {
-                        if (c >= 0 && c < COLS)
-                            inWindowCols.push(`h<sub>${c}</sub>`);
-                    }
-                    document.getElementById("slide05-equation-display").innerHTML =
-                        "H = " + inWindowCols.join(" + ");
 
                     document.getElementById("slide05-op-subtract").textContent =
                         slide05.opSubtract;
@@ -4188,6 +4297,7 @@
                         slide05.slideCount;
 
                     // Update breakdown display
+                    updateSlide05Equation(removingCol, addingCol);
                     updateSlide05Breakdown();
                 }
 
@@ -4205,95 +4315,133 @@
                 function stepSlide05Demo() {
                     if (slide05.completed) return;
 
-                    const { ROWS, COLS, RADIUS, L, centerRow, centerCol } = slide05;
+                    const { ROWS, COLS, RADIUS, L, centerRow, centerCol, currentPhase } = slide05;
 
-                    // Process current position: slide the window right
-                    slide05.slideCount++;
-                    const leftCol = centerCol - RADIUS - 1; // The column being removed (left of current window)
-                    const rightCol = centerCol + RADIUS; // The column being added (right edge of current window)
+                    switch (currentPhase) {
+                        case PHASE05_INIT:
+                            slide05.currentPhase = PHASE05_SHOW_WINDOW;
+                            document.getElementById("slide05-step-label").textContent = "Step 1: Initial Window";
+                            document.getElementById("slide05-description").innerHTML =
+                                `Window centered at (${centerRow}, ${centerCol}). Kernel H is sum of columns in window.`;
+                            updateSlide05Display();
+                            break;
 
-                    // Track which columns are being removed/added for visual feedback
-                    slide05.removingCol = leftCol >= 0 ? leftCol : null;
-                    slide05.addingCol = rightCol;
+                        case PHASE05_SHOW_WINDOW:
+                            slide05.currentPhase = PHASE05_READY;
+                            document.getElementById("slide05-step-label").textContent = "Step 2: Ready to Slide";
+                            document.getElementById("slide05-description").innerHTML =
+                                `Next: Slide right. We will <span style="color:#f87171">REMOVE</span> left column and <span style="color:#60a5fa">ADD</span> right column.`;
+                            break;
 
-                    // Perform the histogram update (subtract left column, add right column)
-                    if (leftCol >= 0) {
-                        for (let g = 0; g < L; g++) {
-                            slide05.kernelHistogram[g] -=
-                                slide05.colHistograms[leftCol][g];
-                            slide05.opSubtract++;
-                        }
-                    }
+                        case PHASE05_READY:
+                            // Identify Remove
+                            slide05.currentPhase = PHASE05_HIGHLIGHT_REMOVE;
+                            const removeCol = centerCol - RADIUS;
+                            slide05.removingCol = (removeCol >= 0) ? removeCol : null;
+                            slide05.addingCol = centerCol + RADIUS + 1; // Anticipate add col for equation
 
-                    for (let g = 0; g < L; g++) {
-                        slide05.kernelHistogram[g] +=
-                            slide05.colHistograms[rightCol][g];
-                        slide05.opAdd++;
-                    }
+                            // Check boundary for addingCol
+                            if (slide05.addingCol >= COLS) slide05.addingCol = null;
 
-                    document.getElementById("slide05-step-label").textContent =
-                        `Step ${slide05.slideCount}: Window at column ${centerCol}`;
+                            if (slide05.removingCol !== null) {
+                                document.getElementById("slide05-step-label").textContent = `Slide ${slide05.slideCount + 1}: Remove Old Column`;
+                                document.getElementById("slide05-description").innerHTML =
+                                    `Subtracting histogram of <span style="color:#f87171">column ${slide05.removingCol}</span>.`;
+                            } else {
+                                // Skip if nothing to remove (edge case start of row? typically handled by init)
+                                // Actually start of row usually re-inits.
+                            }
+                            updateSlide05Display();
+                            break;
 
-                    if (leftCol >= 0) {
-                        document.getElementById("slide05-description").innerHTML =
-                            `Slide right: <span style="color:#f87171;">−h<sub>${leftCol}</sub></span> + <span style="color:#60a5fa;">+h<sub>${rightCol}</sub></span> = ${L} + ${L} = <strong>${2 * L} ops</strong>`;
-                    } else {
-                        document.getElementById("slide05-description").innerHTML =
-                            `Initial position: Adding <span style="color:#60a5fa;">+h<sub>${rightCol}</sub></span>`;
-                    }
-
-                    updateSlide05Display();
-
-                    // Calculate next position (like slide04 does at the end)
-                    const nextCol = centerCol + 1;
-                    const isLastInRow = nextCol > COLS - 1 - RADIUS;
-                    const nextRow = isLastInRow ? centerRow + 1 : centerRow;
-                    const isComplete = isLastInRow && nextRow > ROWS - 1 - RADIUS;
-
-                    if (isComplete) {
-                        slide05.completed = true;
-                        slide05.removingCol = null;
-                        slide05.addingCol = null;
-                        document.getElementById("slide05-step-label").textContent =
-                            "Complete!";
-                        document.getElementById("slide05-description").textContent =
-                            `Processed all positions. Total: ${slide05.slideCount} slides with 2L = ${2 * L} ops each = ${slide05.opSubtract + slide05.opAdd} total ops.`;
-                        updateSlide05Display();
-                        pauseSlide05Demo();
-                    } else if (isLastInRow) {
-                        // Move to next row
-                        slide05.centerRow = nextRow;
-                        slide05.centerCol = RADIUS;
-                        slide05.removingCol = null;
-                        slide05.addingCol = null;
-
-                        // Recompute column histograms for the new row
-                        for (let c = 0; c < COLS; c++) {
-                            slide05.colHistograms[c] = new Array(L).fill(0);
-                            for (
-                                let i = nextRow - RADIUS;
-                                i <= nextRow + RADIUS;
-                                i++
-                            ) {
-                                if (i >= 0 && i < ROWS) {
-                                    slide05.colHistograms[c][
-                                        slide05.imageData[i][c]
-                                    ]++;
+                        case PHASE05_HIGHLIGHT_REMOVE:
+                            // Do Subtract
+                            slide05.currentPhase = PHASE05_DO_SUBTRACT;
+                            if (slide05.removingCol !== null) {
+                                for (let g = 0; g < L; g++) {
+                                    slide05.kernelHistogram[g] -= slide05.colHistograms[slide05.removingCol][g];
+                                    slide05.opSubtract++;
                                 }
                             }
-                        }
 
-                        // Recompute kernel histogram for the new position
-                        computeSlide05Kernel();
+                            document.getElementById("slide05-step-label").textContent = `Slide ${slide05.slideCount + 1}: Subtract Done`;
+                            document.getElementById("slide05-description").innerHTML =
+                                `Subtracted h<sub>${slide05.removingCol}</sub>. Operations: ${L}. Kernel updated.`;
+                            updateSlide05Display();
+                            break;
 
-                        document.getElementById("slide05-step-label").textContent =
-                            `Step ${slide05.slideCount}: Moved to row ${nextRow}`;
-                        document.getElementById("slide05-description").innerHTML =
-                            `Starting new row at position (${nextRow}, ${RADIUS})`;
-                        updateSlide05Display();
-                    } else {
-                        // Move to next column in same row
-                        slide05.centerCol = nextCol;
+                        case PHASE05_DO_SUBTRACT:
+                            // Identify Add
+                            slide05.currentPhase = PHASE05_HIGHLIGHT_ADD;
+                            // removingCol stays set for visualization continuity in equation
+                            document.getElementById("slide05-step-label").textContent = `Slide ${slide05.slideCount + 1}: Add New Column`;
+                            document.getElementById("slide05-description").innerHTML =
+                                `Adding histogram of <span style="color:#60a5fa">column ${slide05.addingCol}</span>.`;
+                            updateSlide05Display();
+                            break;
+
+                        case PHASE05_HIGHLIGHT_ADD:
+                            // Do Add
+                            slide05.currentPhase = PHASE05_DO_ADD;
+                            if (slide05.addingCol !== null) {
+                                for (let g = 0; g < L; g++) {
+                                    slide05.kernelHistogram[g] += slide05.colHistograms[slide05.addingCol][g];
+                                    slide05.opAdd++;
+                                }
+                            }
+                            document.getElementById("slide05-step-label").textContent = `Slide ${slide05.slideCount + 1}: Add Done`;
+                            document.getElementById("slide05-description").innerHTML =
+                                `Added h<sub>${slide05.addingCol}</sub>. Total ops slide: 2L = ${2 * L}. Constant time!`;
+                            updateSlide05Display();
+                            break;
+
+                        case PHASE05_DO_ADD:
+                            // Slide Complete, move indicators
+                            slide05.slideCount++;
+                            slide05.centerCol++;
+                            slide05.removingCol = null;
+                            slide05.addingCol = null;
+
+                            // Check next
+                            if (slide05.centerCol > COLS - 1 - RADIUS) {
+                                // End row
+                                const nextRow = slide05.centerRow + 1;
+                                if (nextRow > ROWS - 1 - RADIUS) {
+                                    slide05.currentPhase = PHASE05_COMPLETE;
+                                    slide05.completed = true;
+                                    document.getElementById("slide05-step-label").textContent = "Demonstration Complete";
+                                    document.getElementById("slide05-description").innerHTML = "All pixels processed with O(1) complexity per step.";
+                                    pauseSlide05Demo();
+                                } else {
+                                    // Next Row
+                                    slide05.centerRow = nextRow;
+                                    slide05.centerCol = RADIUS;
+                                    // Re-init histograms for new row start
+                                    for (let c = 0; c < COLS; c++) {
+                                        slide05.colHistograms[c] = new Array(L).fill(0);
+                                        for (let i = nextRow - RADIUS; i <= nextRow + RADIUS; i++) {
+                                            if (i >= 0 && i < ROWS) {
+                                                slide05.colHistograms[c][slide05.imageData[i][c]]++;
+                                            }
+                                        }
+                                    }
+                                    computeSlide05Kernel();
+
+                                    slide05.currentPhase = PHASE05_READY;
+                                    document.getElementById("slide05-step-label").textContent = "New Row";
+                                    document.getElementById("slide05-description").innerHTML = "Moved to next row. Column histograms recomputed.";
+                                }
+                            } else {
+                                slide05.currentPhase = PHASE05_READY;
+                                document.getElementById("slide05-step-label").textContent = "Slide Complete";
+                                document.getElementById("slide05-description").innerHTML = "Ready for next step.";
+                            }
+                            updateSlide05Display();
+                            break;
+
+                        case PHASE05_COMPLETE:
+                            resetSlide05Demo();
+                            break;
                     }
                 }
 
