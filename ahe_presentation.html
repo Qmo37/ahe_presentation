@@ -3125,29 +3125,71 @@
                     // Calculate actual available height for content
                     const availableHeight = windowHeight - navHeight - slidePaddingTop - slidePaddingBottom - headerHeight - 20;
 
-                    // Reset to natural size to measure
+                    // Reset to natural size to measure first
                     content.style.transform = 'none';
                     content.style.width = '100%';
 
-                    // Use requestAnimationFrame to ensure DOM has settled before measuring
+                    // Use requestAnimationFrame to ensure DOM has settled
                     requestAnimationFrame(() => {
-                        const contentStyle = window.getComputedStyle(content);
-                        const contentPaddingBottom = parseFloat(contentStyle.paddingBottom) || 0;
-                        const contentHeight = content.scrollHeight - contentPaddingBottom;
+                        // Initial measurement
+                        let contentStyle = window.getComputedStyle(content);
+                        let contentPaddingBottom = parseFloat(contentStyle.paddingBottom) || 0;
+                        let contentHeight = content.scrollHeight - contentPaddingBottom;
 
-                        // Debug: log to console
-                        console.log(`Slide scaling: windowHeight=${windowHeight}, navHeight=${navHeight}, headerHeight=${headerHeight}, availableHeight=${availableHeight}, contentHeight=${contentHeight}`);
+                        console.log(`Initial: available=${availableHeight}, content=${contentHeight}`);
 
-                        if (contentHeight > availableHeight && availableHeight > 0) {
-                            const scale = availableHeight / contentHeight;
-                            console.log(`Applying scale: ${scale}`);
+                        // If content fits, no need to scale (or maybe scale up slightly? for now let's just handle overflow)
+                        if (contentHeight <= availableHeight) {
+                            content.style.transform = 'none';
+                            content.style.width = '100%';
+                            return;
+                        }
+
+                        // Iterative approach to find best scale
+                        // We want: scale * height(width/scale) <= availableHeight
+                        // Heuristic loop
+                        let scale = availableHeight / contentHeight;
+
+                        // Limit iterations to prevent infinite loops / performance issues
+                        const maxIterations = 5;
+
+                        function refineScale(iteration) {
+                            if (iteration >= maxIterations) return;
+
+                            // Apply current guess
                             content.style.transformOrigin = 'top left';
                             content.style.transform = `scale(${scale})`;
                             content.style.width = `calc(100% / ${scale})`;
-                        } else {
-                            content.style.transform = 'none';
-                            content.style.width = '100%';
+
+                            // Measure new height involved with this width
+                            requestAnimationFrame(() => {
+                                const newHeight = content.scrollHeight - contentPaddingBottom;
+                                const visualHeight = newHeight * scale;
+                                console.log(`Iter ${iteration}: scale=${scale}, newHeight=${newHeight}, visualHeight=${visualHeight}, target=${availableHeight}`);
+
+                                // Tolerance of px
+                                if (Math.abs(visualHeight - availableHeight) < 5) {
+                                    console.log("Converged!");
+                                    return;
+                                }
+
+                                // If visual height < available (gap), we can increase scale
+                                // If visual height > available (overflow), we must decrease scale
+                                // New guess: scale = scale * (available / visualHeight) 
+                                // But be careful of oscillation. 
+                                // If we have gap (visual < available), increasing scale decreases width -> increases height. 
+                                // So visual height increases by BOTH scale increase AND height increase. 
+                                // Standard proportion might overshoot. Let's dampen.
+
+                                const ratio = availableHeight / visualHeight;
+                                // Dampen the adjustment
+                                scale = scale * (1 + (ratio - 1) * 0.5);
+
+                                refineScale(iteration + 1);
+                            });
                         }
+
+                        refineScale(0);
                     });
                 }
 
