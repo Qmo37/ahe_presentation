@@ -6,7 +6,7 @@ A comprehensive presentation on efficient adaptive histogram equalization algori
 
 <div align="center">
 
-### [🎯 **Open Presentation**](https://htmlpreview.github.io/?https://github.com/YOUR_USERNAME/ahe_presentation/blob/main/ahe_presentation.html)
+### [🎯 **Open Presentation**](https://htmlpreview.github.io/?https://github.com/Qmo37/ahe_presentation/blob/main/ahe_presentation.html)
 
 *Click the button above to view the interactive presentation in your browser*
 
@@ -50,7 +50,7 @@ Click the **Open Presentation** button at the top of this README.
 
 ### Option 3: Clone Repository
 ```bash
-git clone https://github.com/YOUR_USERNAME/ahe_presentation.git
+git clone https://github.com/Qmo37/ahe_presentation.git
 cd ahe_presentation
 # Open ahe_presentation.html in your browser
 ```
