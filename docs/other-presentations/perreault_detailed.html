@@ -1,0 +1,1228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perreault's O(1) Method - Step-by-Step Visualization</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+        
+        h1 {
+            text-align: center;
+            font-size: 1.8em;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #a78bfa, #60a5fa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .subtitle {
+            text-align: center;
+            color: #94a3b8;
+            margin-bottom: 30px;
+        }
+
+        /* Main layout */
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            margin-bottom: 25px;
+        }
+        @media (max-width: 1100px) {
+            .main-content { grid-template-columns: 1fr; }
+        }
+
+        .panel {
+            background: rgba(30, 41, 59, 0.8);
+            border-radius: 16px;
+            padding: 25px;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+        }
+        .panel-title {
+            font-size: 1.1em;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #a78bfa;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .panel-title::before {
+            content: '';
+            width: 4px;
+            height: 20px;
+            background: linear-gradient(180deg, #a78bfa, #60a5fa);
+            border-radius: 2px;
+        }
+
+        /* Image grid with column histograms */
+        .grid-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .image-grid-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .row-labels {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 2px;
+            margin-right: 5px;
+        }
+        .row-label {
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7em;
+            color: #64748b;
+            width: 25px;
+        }
+
+        .grid-with-labels {
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .image-grid {
+            display: grid;
+            gap: 2px;
+            background: #0f172a;
+            padding: 2px;
+            border-radius: 8px;
+        }
+        .grid-cell {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75em;
+            font-weight: 600;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .cell-outside { background: #334155; color: #94a3b8; }
+        .cell-window { background: #4ade80; color: #0f172a; }
+        .cell-center { background: #22c55e; color: white; box-shadow: 0 0 10px rgba(34, 197, 94, 0.5); }
+        .cell-removing { 
+            background: #f87171; 
+            color: #0f172a;
+            animation: pulse-remove 0.5s ease;
+        }
+        .cell-adding { 
+            background: #60a5fa; 
+            color: #0f172a;
+            animation: pulse-add 0.5s ease;
+        }
+
+        @keyframes pulse-remove {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); box-shadow: 0 0 15px rgba(248, 113, 113, 0.8); }
+        }
+        @keyframes pulse-add {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); box-shadow: 0 0 15px rgba(96, 165, 250, 0.8); }
+        }
+
+        /* Column labels and histograms below grid */
+        .column-section {
+            margin-top: 15px;
+            width: 100%;
+        }
+        .column-labels {
+            display: flex;
+            gap: 2px;
+            margin-left: 27px; /* Align with grid */
+            margin-bottom: 8px;
+        }
+        .col-label {
+            width: 40px;
+            text-align: center;
+            font-size: 0.75em;
+            color: #64748b;
+        }
+        .col-label.in-window { color: #4ade80; font-weight: 600; }
+        .col-label.removing { color: #f87171; font-weight: 600; }
+        .col-label.adding { color: #60a5fa; font-weight: 600; }
+
+        /* Mini column histograms display */
+        .col-histograms-container {
+            display: flex;
+            gap: 2px;
+            margin-left: 27px;
+        }
+        .col-hist {
+            width: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 5px 2px;
+            background: #1e293b;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+        .col-hist.in-window { 
+            background: rgba(74, 222, 128, 0.2); 
+            border: 1px solid #4ade80;
+        }
+        .col-hist.removing { 
+            background: rgba(248, 113, 113, 0.2); 
+            border: 1px solid #f87171;
+        }
+        .col-hist.adding { 
+            background: rgba(96, 165, 250, 0.2); 
+            border: 1px solid #60a5fa;
+        }
+        .col-hist-title {
+            font-size: 0.65em;
+            color: #94a3b8;
+            margin-bottom: 3px;
+        }
+        .col-hist-bars {
+            display: flex;
+            gap: 1px;
+            align-items: flex-end;
+            height: 30px;
+        }
+        .col-hist-bar {
+            width: 4px;
+            background: #6366f1;
+            border-radius: 1px;
+            transition: height 0.3s ease;
+        }
+
+        /* Kernel histogram panel (right side) */
+        .histogram-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Equation display */
+        .equation-box {
+            background: #0f172a;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            border: 1px solid #334155;
+        }
+        .equation-title {
+            font-size: 0.85em;
+            color: #94a3b8;
+            margin-bottom: 10px;
+        }
+        .equation {
+            font-size: 1.1em;
+            font-family: 'Courier New', monospace;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .eq-h { color: #fbbf24; }
+        .eq-minus { color: #f87171; font-size: 1.3em; }
+        .eq-plus { color: #60a5fa; font-size: 1.3em; }
+        .eq-col-remove { color: #f87171; }
+        .eq-col-add { color: #60a5fa; }
+        .eq-equals { color: #94a3b8; }
+
+        /* Kernel histogram visualization */
+        .kernel-hist-container {
+            background: #0f172a;
+            border-radius: 10px;
+            padding: 20px;
+        }
+        .kernel-hist-title {
+            font-size: 0.9em;
+            color: #94a3b8;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .kernel-histogram {
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            height: 150px;
+            gap: 8px;
+            padding: 10px;
+            background: #1e293b;
+            border-radius: 8px;
+        }
+        .kernel-bar-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+        .kernel-bar {
+            width: 35px;
+            background: linear-gradient(180deg, #a78bfa, #6366f1);
+            border-radius: 4px 4px 0 0;
+            transition: all 0.4s ease;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding-top: 5px;
+            min-height: 0;
+        }
+        .kernel-bar.changing {
+            animation: bar-flash 0.4s ease;
+        }
+        @keyframes bar-flash {
+            0%, 100% { filter: brightness(1); }
+            50% { filter: brightness(1.5); }
+        }
+        .kernel-bar-value {
+            font-size: 0.75em;
+            font-weight: 600;
+            color: white;
+        }
+        .kernel-bar-label {
+            font-size: 0.75em;
+            color: #64748b;
+        }
+
+        /* Breakdown showing column contributions */
+        .breakdown-container {
+            background: #0f172a;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        .breakdown-title {
+            font-size: 0.85em;
+            color: #94a3b8;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        .breakdown-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            margin: 8px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            flex-wrap: wrap;
+        }
+        .breakdown-label {
+            min-width: 50px;
+            text-align: right;
+            color: #94a3b8;
+        }
+        .breakdown-values {
+            display: flex;
+            gap: 3px;
+        }
+        .breakdown-val {
+            width: 28px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #334155;
+            border-radius: 4px;
+            font-size: 0.8em;
+        }
+        .breakdown-val.removing { background: rgba(248, 113, 113, 0.3); color: #f87171; }
+        .breakdown-val.adding { background: rgba(96, 165, 250, 0.3); color: #60a5fa; }
+        .breakdown-val.result { background: rgba(251, 191, 36, 0.3); color: #fbbf24; }
+
+        /* Controls */
+        .controls-panel {
+            background: rgba(30, 41, 59, 0.8);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            margin-bottom: 20px;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(99, 102, 241, 0.4);
+        }
+        .btn-secondary {
+            background: #334155;
+            color: #e2e8f0;
+        }
+        .btn-secondary:hover { background: #475569; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            justify-content: center;
+        }
+        .speed-control label {
+            color: #94a3b8;
+            font-size: 0.9em;
+        }
+        .speed-control input {
+            width: 120px;
+        }
+
+        /* Status display */
+        .status-panel {
+            background: #0f172a;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 15px;
+            min-height: 120px;
+        }
+        .status-step {
+            font-size: 0.9em;
+            color: #a78bfa;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        .status-description {
+            font-size: 0.95em;
+            color: #e2e8f0;
+            line-height: 1.6;
+        }
+        .status-description .highlight-remove { color: #f87171; font-weight: 600; }
+        .status-description .highlight-add { color: #60a5fa; font-weight: 600; }
+        .status-description .highlight-result { color: #fbbf24; font-weight: 600; }
+
+        /* Operation counter */
+        .op-counter {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #334155;
+        }
+        .op-item {
+            text-align: center;
+        }
+        .op-value {
+            font-size: 1.5em;
+            font-weight: 700;
+            color: #a78bfa;
+        }
+        .op-label {
+            font-size: 0.75em;
+            color: #64748b;
+        }
+
+        /* Legend */
+        .legend {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #334155;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.8em;
+            color: #94a3b8;
+        }
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+        }
+
+        /* Concept explanation */
+        .concept-box {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+        .concept-title {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #a78bfa;
+            margin-bottom: 12px;
+        }
+        .concept-text {
+            color: #cbd5e1;
+            line-height: 1.7;
+            font-size: 0.95em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Perreault's O(1) Column Histogram Method</h1>
+        <p class="subtitle">Step-by-step visualization of the revolutionary constant-time approach</p>
+
+        <!-- Concept explanation -->
+        <div class="concept-box">
+            <div class="concept-title">💡 The Key Insight</div>
+            <div class="concept-text">
+                Instead of updating the histogram pixel-by-pixel (which takes O(r) time), Perreault pre-computes a <strong>histogram for each column</strong>. 
+                The kernel histogram H is simply the <strong>sum of all column histograms</strong> within the window. 
+                When the window slides right, we subtract one entire column histogram and add another — 
+                that's exactly <strong>2L = 512 operations</strong> regardless of the window radius!
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls-panel">
+            <div class="controls">
+                <button class="btn btn-secondary" id="btn-reset" onclick="resetDemo()">⟲ Reset</button>
+                <button class="btn btn-primary" id="btn-step" onclick="stepDemo()">→ Next Step</button>
+                <button class="btn btn-primary" id="btn-play" onclick="playDemo()">▶ Auto Play</button>
+                <button class="btn btn-secondary" id="btn-pause" onclick="pauseDemo()" disabled>⏸ Pause</button>
+            </div>
+            <div class="speed-control">
+                <label>Animation Speed:</label>
+                <input type="range" id="speed-slider" min="1" max="10" value="5">
+                <span id="speed-label">Normal</span>
+            </div>
+        </div>
+
+        <!-- Main content -->
+        <div class="main-content">
+            <!-- Left panel: Image grid with column histograms -->
+            <div class="panel">
+                <div class="panel-title">Image Grid & Column Histograms</div>
+                
+                <div class="grid-section">
+                    <div class="image-grid-container">
+                        <div class="grid-with-labels">
+                            <div class="row-labels" id="row-labels"></div>
+                            <div class="image-grid" id="image-grid"></div>
+                        </div>
+                        
+                        <div class="column-section">
+                            <div class="column-labels" id="column-labels"></div>
+                            <div class="col-histograms-container" id="col-histograms"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #334155;"></div>
+                        <span>Outside window</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #4ade80;"></div>
+                        <span>In window</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #22c55e;"></div>
+                        <span>Center pixel</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #f87171;"></div>
+                        <span>Being removed</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #60a5fa;"></div>
+                        <span>Being added</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right panel: Kernel histogram -->
+            <div class="panel">
+                <div class="panel-title">Kernel Histogram H (Intensity Distribution)</div>
+                
+                <div class="histogram-section">
+                    <!-- Equation showing current state -->
+                    <div class="equation-box">
+                        <div class="equation-title">Current Kernel Histogram Composition</div>
+                        <div class="equation" id="equation-display">
+                            H = h<sub>1</sub> + h<sub>2</sub> + h<sub>3</sub>
+                        </div>
+                    </div>
+
+                    <!-- Main kernel histogram -->
+                    <div class="kernel-hist-container">
+                        <div class="kernel-hist-title">
+                            Histogram H: Count of pixels at each intensity level
+                        </div>
+                        <div class="kernel-histogram" id="kernel-histogram"></div>
+                    </div>
+
+                    <!-- Breakdown showing column contributions -->
+                    <div class="breakdown-container">
+                        <div class="breakdown-title">
+                            How H is computed from column histograms (for each intensity g):
+                        </div>
+                        <div id="breakdown-display"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status and explanation panel -->
+        <div class="panel">
+            <div class="panel-title">Step-by-Step Explanation</div>
+            
+            <div class="status-panel">
+                <div class="status-step" id="status-step">Step 0: Initialization</div>
+                <div class="status-description" id="status-description">
+                    Click "Next Step" to begin the demonstration. We'll show how the column histogram method works step by step.
+                </div>
+            </div>
+
+            <div class="op-counter">
+                <div class="op-item">
+                    <div class="op-value" id="op-subtract">0</div>
+                    <div class="op-label">Subtract operations</div>
+                </div>
+                <div class="op-item">
+                    <div class="op-value" id="op-add">0</div>
+                    <div class="op-label">Add operations</div>
+                </div>
+                <div class="op-item">
+                    <div class="op-value" id="op-total">0</div>
+                    <div class="op-label">Total (always 2L per slide)</div>
+                </div>
+                <div class="op-item">
+                    <div class="op-value" id="op-slides">0</div>
+                    <div class="op-label">Window slides</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const ROWS = 5;
+        const COLS = 7;
+        const RADIUS = 1;
+        const L = 6; // Number of intensity levels (0 to L-1) - simplified for visualization
+
+        // Generate image data with values 0 to L-1
+        const imageData = [
+            [2, 1, 3, 2, 4, 1, 2],
+            [1, 2, 1, 3, 2, 3, 1],
+            [3, 1, 2, 1, 2, 1, 4],
+            [2, 3, 1, 2, 3, 2, 1],
+            [1, 2, 2, 1, 1, 3, 2]
+        ];
+
+        // State
+        let colHistograms = []; // Array of column histograms
+        let kernelHistogram = new Array(L).fill(0);
+        let centerRow = RADIUS;
+        let centerCol = RADIUS;
+        let currentStep = 0;
+        let animationInterval = null;
+        let opSubtract = 0;
+        let opAdd = 0;
+        let slideCount = 0;
+
+        // Animation phases
+        const PHASE_INIT = 'init';
+        const PHASE_SHOW_COL_HIST = 'show_col_hist';
+        const PHASE_COMPUTE_KERNEL = 'compute_kernel';
+        const PHASE_READY = 'ready';
+        const PHASE_HIGHLIGHT_REMOVE = 'highlight_remove';
+        const PHASE_DO_SUBTRACT = 'do_subtract';
+        const PHASE_HIGHLIGHT_ADD = 'highlight_add';
+        const PHASE_DO_ADD = 'do_add';
+        const PHASE_COMPLETE = 'complete';
+
+        let currentPhase = PHASE_INIT;
+        let animatingBin = 0;
+
+        // Initialize
+        function init() {
+            createGrid();
+            createColumnHistograms();
+            createKernelHistogram();
+            computeAllColumnHistograms();
+            updateDisplay();
+        }
+
+        function createGrid() {
+            const grid = document.getElementById('image-grid');
+            const rowLabels = document.getElementById('row-labels');
+            const colLabels = document.getElementById('column-labels');
+            
+            grid.style.gridTemplateColumns = `repeat(${COLS}, 40px)`;
+            grid.innerHTML = '';
+            rowLabels.innerHTML = '';
+            colLabels.innerHTML = '';
+
+            // Row labels
+            for (let i = 0; i < ROWS; i++) {
+                const label = document.createElement('div');
+                label.className = 'row-label';
+                label.textContent = `r${i}`;
+                rowLabels.appendChild(label);
+            }
+
+            // Grid cells
+            for (let i = 0; i < ROWS; i++) {
+                for (let j = 0; j < COLS; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'grid-cell cell-outside';
+                    cell.id = `cell-${i}-${j}`;
+                    cell.textContent = imageData[i][j];
+                    grid.appendChild(cell);
+                }
+            }
+
+            // Column labels
+            for (let c = 0; c < COLS; c++) {
+                const label = document.createElement('div');
+                label.className = 'col-label';
+                label.id = `col-label-${c}`;
+                label.textContent = `c${c}`;
+                colLabels.appendChild(label);
+            }
+        }
+
+        function createColumnHistograms() {
+            const container = document.getElementById('col-histograms');
+            container.innerHTML = '';
+
+            for (let c = 0; c < COLS; c++) {
+                colHistograms[c] = new Array(L).fill(0);
+
+                const colHist = document.createElement('div');
+                colHist.className = 'col-hist';
+                colHist.id = `col-hist-${c}`;
+
+                const title = document.createElement('div');
+                title.className = 'col-hist-title';
+                title.textContent = `h${c}`;
+
+                const bars = document.createElement('div');
+                bars.className = 'col-hist-bars';
+                bars.id = `col-hist-bars-${c}`;
+
+                for (let g = 0; g < L; g++) {
+                    const bar = document.createElement('div');
+                    bar.className = 'col-hist-bar';
+                    bar.id = `col-hist-bar-${c}-${g}`;
+                    bar.style.height = '0px';
+                    bars.appendChild(bar);
+                }
+
+                colHist.appendChild(title);
+                colHist.appendChild(bars);
+                container.appendChild(colHist);
+            }
+        }
+
+        function createKernelHistogram() {
+            const container = document.getElementById('kernel-histogram');
+            container.innerHTML = '';
+
+            for (let g = 0; g < L; g++) {
+                const barContainer = document.createElement('div');
+                barContainer.className = 'kernel-bar-container';
+
+                const bar = document.createElement('div');
+                bar.className = 'kernel-bar';
+                bar.id = `kernel-bar-${g}`;
+                bar.style.height = '0px';
+
+                const value = document.createElement('span');
+                value.className = 'kernel-bar-value';
+                value.id = `kernel-value-${g}`;
+                value.textContent = '0';
+                bar.appendChild(value);
+
+                const label = document.createElement('div');
+                label.className = 'kernel-bar-label';
+                label.textContent = `g=${g}`;
+
+                barContainer.appendChild(bar);
+                barContainer.appendChild(label);
+                container.appendChild(barContainer);
+            }
+        }
+
+        function computeAllColumnHistograms() {
+            // Compute histogram for each column, using rows [centerRow-r, centerRow+r]
+            for (let c = 0; c < COLS; c++) {
+                colHistograms[c] = new Array(L).fill(0);
+                for (let i = centerRow - RADIUS; i <= centerRow + RADIUS; i++) {
+                    if (i >= 0 && i < ROWS) {
+                        const g = imageData[i][c];
+                        colHistograms[c][g]++;
+                    }
+                }
+            }
+        }
+
+        function computeKernelFromColumns() {
+            kernelHistogram = new Array(L).fill(0);
+            for (let c = centerCol - RADIUS; c <= centerCol + RADIUS; c++) {
+                if (c >= 0 && c < COLS) {
+                    for (let g = 0; g < L; g++) {
+                        kernelHistogram[g] += colHistograms[c][g];
+                    }
+                }
+            }
+        }
+
+        function updateDisplay() {
+            updateGridDisplay();
+            updateColumnHistogramDisplay();
+            updateKernelHistogramDisplay();
+            updateEquationDisplay();
+            updateBreakdownDisplay();
+            updateOpCounter();
+        }
+
+        function updateGridDisplay(removingCol = -1, addingCol = -1) {
+            for (let i = 0; i < ROWS; i++) {
+                for (let j = 0; j < COLS; j++) {
+                    const cell = document.getElementById(`cell-${i}-${j}`);
+                    const inRow = i >= centerRow - RADIUS && i <= centerRow + RADIUS;
+                    const inCol = j >= centerCol - RADIUS && j <= centerCol + RADIUS;
+
+                    cell.className = 'grid-cell';
+
+                    if (i === centerRow && j === centerCol) {
+                        cell.classList.add('cell-center');
+                    } else if (inRow && j === removingCol) {
+                        cell.classList.add('cell-removing');
+                    } else if (inRow && j === addingCol) {
+                        cell.classList.add('cell-adding');
+                    } else if (inRow && inCol) {
+                        cell.classList.add('cell-window');
+                    } else {
+                        cell.classList.add('cell-outside');
+                    }
+                }
+            }
+
+            // Update column labels
+            for (let c = 0; c < COLS; c++) {
+                const label = document.getElementById(`col-label-${c}`);
+                label.className = 'col-label';
+                
+                const inWindow = c >= centerCol - RADIUS && c <= centerCol + RADIUS;
+                if (c === removingCol) {
+                    label.classList.add('removing');
+                } else if (c === addingCol) {
+                    label.classList.add('adding');
+                } else if (inWindow) {
+                    label.classList.add('in-window');
+                }
+            }
+
+            // Update column histogram highlighting
+            for (let c = 0; c < COLS; c++) {
+                const colHist = document.getElementById(`col-hist-${c}`);
+                colHist.className = 'col-hist';
+                
+                const inWindow = c >= centerCol - RADIUS && c <= centerCol + RADIUS;
+                if (c === removingCol) {
+                    colHist.classList.add('removing');
+                } else if (c === addingCol) {
+                    colHist.classList.add('adding');
+                } else if (inWindow) {
+                    colHist.classList.add('in-window');
+                }
+            }
+        }
+
+        function updateColumnHistogramDisplay() {
+            const maxVal = 3; // For consistent scaling
+            for (let c = 0; c < COLS; c++) {
+                for (let g = 0; g < L; g++) {
+                    const bar = document.getElementById(`col-hist-bar-${c}-${g}`);
+                    const height = (colHistograms[c][g] / maxVal) * 25;
+                    bar.style.height = `${height}px`;
+                }
+            }
+        }
+
+        function updateKernelHistogramDisplay() {
+            const maxVal = Math.max(...kernelHistogram, 1);
+            for (let g = 0; g < L; g++) {
+                const bar = document.getElementById(`kernel-bar-${g}`);
+                const value = document.getElementById(`kernel-value-${g}`);
+                const height = (kernelHistogram[g] / maxVal) * 120;
+                bar.style.height = `${Math.max(height, kernelHistogram[g] > 0 ? 25 : 0)}px`;
+                value.textContent = kernelHistogram[g];
+            }
+        }
+
+        function updateEquationDisplay(removingCol = -1, addingCol = -1) {
+            const eqDisplay = document.getElementById('equation-display');
+            let html = '<span class="eq-h">H</span> <span class="eq-equals">=</span> ';
+            
+            const leftCol = centerCol - RADIUS;
+            const rightCol = centerCol + RADIUS;
+
+            if (removingCol >= 0 && addingCol >= 0) {
+                // Show the update equation
+                html = '<span class="eq-h">H<sub>new</sub></span> <span class="eq-equals">=</span> ';
+                html += '<span class="eq-h">H<sub>old</sub></span> ';
+                html += `<span class="eq-minus">−</span> <span class="eq-col-remove">h<sub>${removingCol}</sub></span> `;
+                html += `<span class="eq-plus">+</span> <span class="eq-col-add">h<sub>${addingCol}</sub></span>`;
+            } else {
+                // Show current sum
+                for (let c = leftCol; c <= rightCol; c++) {
+                    if (c > leftCol) html += ' <span class="eq-plus">+</span> ';
+                    html += `h<sub>${c}</sub>`;
+                }
+            }
+
+            eqDisplay.innerHTML = html;
+        }
+
+        function updateBreakdownDisplay(removingCol = -1, addingCol = -1) {
+            const container = document.getElementById('breakdown-display');
+            container.innerHTML = '';
+
+            const leftCol = centerCol - RADIUS;
+            const rightCol = centerCol + RADIUS;
+
+            // Show breakdown for each intensity level
+            for (let g = 0; g < L; g++) {
+                const row = document.createElement('div');
+                row.className = 'breakdown-row';
+
+                // Label
+                const label = document.createElement('span');
+                label.className = 'breakdown-label';
+                label.textContent = `H[${g}] =`;
+                row.appendChild(label);
+
+                // Values from each column
+                const values = document.createElement('div');
+                values.className = 'breakdown-values';
+
+                if (removingCol >= 0 && addingCol >= 0) {
+                    // Show update operation
+                    const oldVal = document.createElement('span');
+                    oldVal.className = 'breakdown-val';
+                    oldVal.textContent = kernelHistogram[g];
+                    values.appendChild(oldVal);
+
+                    const minus = document.createElement('span');
+                    minus.textContent = ' − ';
+                    minus.style.color = '#f87171';
+                    values.appendChild(minus);
+
+                    const removeVal = document.createElement('span');
+                    removeVal.className = 'breakdown-val removing';
+                    removeVal.textContent = colHistograms[removingCol][g];
+                    values.appendChild(removeVal);
+
+                    const plus = document.createElement('span');
+                    plus.textContent = ' + ';
+                    plus.style.color = '#60a5fa';
+                    values.appendChild(plus);
+
+                    const addVal = document.createElement('span');
+                    addVal.className = 'breakdown-val adding';
+                    addVal.textContent = colHistograms[addingCol][g];
+                    values.appendChild(addVal);
+
+                    const equals = document.createElement('span');
+                    equals.textContent = ' = ';
+                    values.appendChild(equals);
+
+                    const result = document.createElement('span');
+                    result.className = 'breakdown-val result';
+                    const newVal = kernelHistogram[g] - colHistograms[removingCol][g] + colHistograms[addingCol][g];
+                    result.textContent = newVal;
+                    values.appendChild(result);
+                } else {
+                    // Show sum
+                    for (let c = leftCol; c <= rightCol; c++) {
+                        if (c > leftCol) {
+                            const plus = document.createElement('span');
+                            plus.textContent = '+';
+                            plus.style.margin = '0 2px';
+                            plus.style.color = '#64748b';
+                            values.appendChild(plus);
+                        }
+                        const val = document.createElement('span');
+                        val.className = 'breakdown-val';
+                        val.textContent = colHistograms[c][g];
+                        values.appendChild(val);
+                    }
+
+                    const equals = document.createElement('span');
+                    equals.textContent = ' = ';
+                    equals.style.margin = '0 5px';
+                    values.appendChild(equals);
+
+                    const result = document.createElement('span');
+                    result.className = 'breakdown-val result';
+                    result.textContent = kernelHistogram[g];
+                    values.appendChild(result);
+                }
+
+                row.appendChild(values);
+                container.appendChild(row);
+            }
+        }
+
+        function updateOpCounter() {
+            document.getElementById('op-subtract').textContent = opSubtract;
+            document.getElementById('op-add').textContent = opAdd;
+            document.getElementById('op-total').textContent = opSubtract + opAdd;
+            document.getElementById('op-slides').textContent = slideCount;
+        }
+
+        function setStatus(step, description) {
+            document.getElementById('status-step').textContent = step;
+            document.getElementById('status-description').innerHTML = description;
+        }
+
+        // Step through the demo
+        function stepDemo() {
+            switch (currentPhase) {
+                case PHASE_INIT:
+                    // Show column histograms
+                    currentPhase = PHASE_SHOW_COL_HIST;
+                    setStatus(
+                        'Step 1: Column Histograms Computed',
+                        `For each column, we compute a histogram h<sub>c</sub> counting pixel intensities in rows [${centerRow - RADIUS}, ${centerRow + RADIUS}]. ` +
+                        `Each column histogram has <strong>L = ${L}</strong> bins. ` +
+                        `Look at the small bar charts below each column — these are the column histograms!`
+                    );
+                    updateDisplay();
+                    break;
+
+                case PHASE_SHOW_COL_HIST:
+                    // Compute kernel histogram
+                    currentPhase = PHASE_COMPUTE_KERNEL;
+                    computeKernelFromColumns();
+                    setStatus(
+                        'Step 2: Kernel Histogram = Sum of Column Histograms',
+                        `The kernel histogram H at position (${centerRow}, ${centerCol}) is the <strong>sum</strong> of column histograms ` +
+                        `h<sub>${centerCol - RADIUS}</sub> + h<sub>${centerCol}</sub> + h<sub>${centerCol + RADIUS}</sub>. ` +
+                        `Look at the breakdown on the right: for each intensity g, H[g] = sum of h<sub>c</sub>[g] for columns in the window.`
+                    );
+                    updateDisplay();
+                    break;
+
+                case PHASE_COMPUTE_KERNEL:
+                    currentPhase = PHASE_READY;
+                    setStatus(
+                        'Step 3: Ready to Slide',
+                        `Now the window is ready to slide right. The current center is at (${centerRow}, ${centerCol}). ` +
+                        `When we slide right, we need to: <br>` +
+                        `1. <span class="highlight-remove">Remove</span> the leftmost column (c${centerCol - RADIUS}) from H<br>` +
+                        `2. <span class="highlight-add">Add</span> the new rightmost column (c${centerCol + RADIUS + 1}) to H`
+                    );
+                    break;
+
+                case PHASE_READY:
+                    // Start sliding: highlight removing column
+                    currentPhase = PHASE_HIGHLIGHT_REMOVE;
+                    const removeCol = centerCol - RADIUS;
+                    updateGridDisplay(removeCol, -1);
+                    setStatus(
+                        'Step 4: Identify Column to Remove',
+                        `Sliding right from (${centerRow}, ${centerCol}) to (${centerRow}, ${centerCol + 1}). ` +
+                        `The <span class="highlight-remove">leftmost column c${removeCol}</span> (shown in red) will leave the window. ` +
+                        `We need to subtract its histogram h<sub>${removeCol}</sub> from H.`
+                    );
+                    updateEquationDisplay(removeCol, centerCol + RADIUS + 1);
+                    updateBreakdownDisplay(removeCol, centerCol + RADIUS + 1);
+                    break;
+
+                case PHASE_HIGHLIGHT_REMOVE:
+                    // Do the subtraction
+                    currentPhase = PHASE_DO_SUBTRACT;
+                    const removeCol2 = centerCol - RADIUS;
+                    
+                    // Subtract column histogram
+                    for (let g = 0; g < L; g++) {
+                        kernelHistogram[g] -= colHistograms[removeCol2][g];
+                    }
+                    opSubtract += L;
+                    
+                    updateKernelHistogramDisplay();
+                    updateOpCounter();
+                    setStatus(
+                        'Step 5: Subtract Column Histogram',
+                        `<span class="highlight-remove">Subtracted h<sub>${removeCol2}</sub></span> from H. ` +
+                        `This required <strong>${L} subtraction operations</strong> (one per intensity bin). ` +
+                        `Watch the kernel histogram values decrease!`
+                    );
+                    break;
+
+                case PHASE_DO_SUBTRACT:
+                    // Highlight adding column
+                    currentPhase = PHASE_HIGHLIGHT_ADD;
+                    const removeCol3 = centerCol - RADIUS;
+                    const addCol = centerCol + RADIUS + 1;
+                    updateGridDisplay(removeCol3, addCol);
+                    setStatus(
+                        'Step 6: Identify Column to Add',
+                        `Now we identify the <span class="highlight-add">new rightmost column c${addCol}</span> (shown in blue) that enters the window. ` +
+                        `We need to add its histogram h<sub>${addCol}</sub> to H.`
+                    );
+                    break;
+
+                case PHASE_HIGHLIGHT_ADD:
+                    // Do the addition
+                    currentPhase = PHASE_DO_ADD;
+                    const addCol2 = centerCol + RADIUS + 1;
+                    
+                    // Add column histogram
+                    for (let g = 0; g < L; g++) {
+                        kernelHistogram[g] += colHistograms[addCol2][g];
+                    }
+                    opAdd += L;
+                    
+                    updateKernelHistogramDisplay();
+                    updateOpCounter();
+                    setStatus(
+                        'Step 7: Add Column Histogram',
+                        `<span class="highlight-add">Added h<sub>${addCol2}</sub></span> to H. ` +
+                        `This required <strong>${L} addition operations</strong>. ` +
+                        `Total operations for this slide: <span class="highlight-result">${L} + ${L} = ${2*L}</span> (constant!)`
+                    );
+                    break;
+
+                case PHASE_DO_ADD:
+                    // Complete the slide
+                    currentPhase = PHASE_COMPLETE;
+                    centerCol++;
+                    slideCount++;
+                    
+                    // Check if we can continue
+                    if (centerCol > COLS - 1 - RADIUS) {
+                        setStatus(
+                            'Complete!',
+                            `Reached the end of the row. Total slides: <span class="highlight-result">${slideCount}</span>. ` +
+                            `Total operations: <span class="highlight-result">${opSubtract + opAdd}</span>. ` +
+                            `Notice that each slide cost exactly <strong>2L = ${2*L}</strong> operations, regardless of window radius!`
+                        );
+                        updateGridDisplay();
+                        updateEquationDisplay();
+                        updateBreakdownDisplay();
+                    } else {
+                        currentPhase = PHASE_READY;
+                        setStatus(
+                            'Step 8: Slide Complete!',
+                            `Window moved to center (${centerRow}, ${centerCol}). ` +
+                            `Slide #${slideCount} complete with <strong>2L = ${2*L}</strong> operations. ` +
+                            `Click "Next Step" to continue sliding, or observe how H is now the sum of h<sub>${centerCol - RADIUS}</sub> + h<sub>${centerCol}</sub> + h<sub>${centerCol + RADIUS}</sub>.`
+                        );
+                        updateGridDisplay();
+                        updateEquationDisplay();
+                        updateBreakdownDisplay();
+                    }
+                    break;
+
+                case PHASE_COMPLETE:
+                    // Reset for another demo
+                    resetDemo();
+                    break;
+            }
+        }
+
+        function playDemo() {
+            document.getElementById('btn-play').disabled = true;
+            document.getElementById('btn-pause').disabled = false;
+            document.getElementById('btn-step').disabled = true;
+
+            const speed = 11 - document.getElementById('speed-slider').value;
+            const interval = speed * 200;
+
+            animationInterval = setInterval(() => {
+                if (currentPhase === PHASE_COMPLETE) {
+                    pauseDemo();
+                } else {
+                    stepDemo();
+                }
+            }, interval);
+        }
+
+        function pauseDemo() {
+            clearInterval(animationInterval);
+            document.getElementById('btn-play').disabled = false;
+            document.getElementById('btn-pause').disabled = true;
+            document.getElementById('btn-step').disabled = false;
+        }
+
+        function resetDemo() {
+            pauseDemo();
+            centerRow = RADIUS;
+            centerCol = RADIUS;
+            currentPhase = PHASE_INIT;
+            opSubtract = 0;
+            opAdd = 0;
+            slideCount = 0;
+            kernelHistogram = new Array(L).fill(0);
+            
+            computeAllColumnHistograms();
+            updateGridDisplay();
+            updateColumnHistogramDisplay();
+            updateKernelHistogramDisplay();
+            updateEquationDisplay();
+            updateBreakdownDisplay();
+            updateOpCounter();
+            
+            setStatus(
+                'Step 0: Initialization',
+                `Window centered at (${centerRow}, ${centerCol}) with radius r=${RADIUS}. ` +
+                `The image has ${L} possible intensity levels (0 to ${L-1}). ` +
+                `Click "Next Step" to see how column histograms enable O(1) updates!`
+            );
+        }
+
+        // Speed slider
+        document.getElementById('speed-slider').addEventListener('input', function() {
+            const labels = ['Very Slow', 'Slower', 'Slow', 'Normal', 'Fast', 'Faster', 'Very Fast'];
+            const idx = Math.floor((this.value - 1) / 1.5);
+            document.getElementById('speed-label').textContent = labels[Math.min(idx, labels.length - 1)];
+        });
+
+        // Initialize on load
+        window.onload = function() {
+            init();
+            resetDemo();
+        };
+    </script>
+</body>
+</html>

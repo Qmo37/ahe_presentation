@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AHE O(1) - Technical Deep Dive</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            line-height: 1.7;
+            color: #1a202c;
+            background: #f7fafc;
+            padding: 20px;
+        }
+        .container { max-width: 900px; margin: 0 auto; }
+        
+        h1 { font-size: 1.8em; color: #2d3748; margin-bottom: 5px; }
+        h2 { 
+            font-size: 1.3em; 
+            color: #553c9a; 
+            margin: 30px 0 15px 0;
+            padding: 10px 15px;
+            background: linear-gradient(90deg, #e9d8fd, transparent);
+            border-left: 4px solid #805ad5;
+        }
+        h3 { font-size: 1.1em; color: #2d3748; margin: 20px 0 10px 0; }
+        
+        p { margin-bottom: 12px; }
+        
+        .section {
+            background: white;
+            padding: 25px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .eq-box {
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+        }
+        .eq-box .eq-label {
+            color: #68d391;
+            font-size: 0.85em;
+            margin-bottom: 8px;
+        }
+        .eq-box code { color: #fbd38d; }
+        .eq-box .comment { color: #718096; }
+        
+        .algo-box {
+            background: #fffaf0;
+            border: 2px solid #ed8936;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        .algo-box .algo-title {
+            font-weight: bold;
+            color: #c05621;
+            margin-bottom: 10px;
+        }
+        
+        .key-point {
+            background: #ebf8ff;
+            border-left: 4px solid #3182ce;
+            padding: 12px 15px;
+            margin: 15px 0;
+        }
+        
+        .complexity {
+            display: inline-block;
+            background: #48bb78;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 15px;
+            font-weight: bold;
+            font-size: 0.85em;
+        }
+        .complexity.bad { background: #f56565; }
+        .complexity.mid { background: #ed8936; }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 0.9em;
+        }
+        th, td {
+            padding: 10px;
+            border: 1px solid #e2e8f0;
+            text-align: center;
+        }
+        th { background: #805ad5; color: white; }
+        tr:nth-child(even) { background: #f7fafc; }
+        
+        .grid-demo {
+            display: flex;
+            gap: 30px;
+            align-items: flex-start;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        .mini-grid {
+            display: grid;
+            gap: 2px;
+            background: #2d3748;
+            padding: 2px;
+            border-radius: 5px;
+        }
+        .cell {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75em;
+            font-weight: bold;
+            border-radius: 3px;
+        }
+        .hl-red { box-shadow: inset 0 0 0 3px #e53e3e; }
+        .hl-green { box-shadow: inset 0 0 0 3px #38a169; }
+        .hl-blue { box-shadow: inset 0 0 0 3px #3182ce; }
+        
+        .flex-row {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+        .tag-new { background: #c6f6d5; color: #276749; }
+        .tag-remove { background: #fed7d7; color: #c53030; }
+        
+        .compare-box {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 15px 0;
+        }
+        .compare-item {
+            padding: 15px;
+            border-radius: 8px;
+        }
+        .compare-item.before { background: #fed7d7; }
+        .compare-item.after { background: #c6f6d5; }
+        
+        ul { margin-left: 20px; margin-bottom: 12px; }
+        li { margin-bottom: 5px; }
+        
+        .subtitle { color: #718096; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="section">
+            <h1>Adaptive Histogram Equalization in O(1)</h1>
+            <p class="subtitle">Härtinger & Steger, 2024 — Technical Deep Dive</p>
+            
+            <div class="key-point">
+                <strong>Core Contribution:</strong> First constant-time exact AHE/CLAHE algorithm. No interpolation artifacts (unlike IAHE). 94% faster than O(r) methods at r=300.
+            </div>
+        </div>
+
+        <!-- Section 3.1: Notation -->
+        <div class="section">
+            <h2>§3.1 Notation</h2>
+            
+            <div class="eq-box">
+                <div class="eq-label">Setup</div>
+                Image: <code>I ∈ {0,...,255}^(M×N)</code><br>
+                Window radius: <code>r</code> → size <code>(2r+1)×(2r+1)</code><br>
+                Histogram bins: <code>L = 256</code> (for 8-bit)<br>
+                Kernel histogram at (i,j): <code>H_ij ∈ ℕ^L</code>
+            </div>
+
+            <div class="eq-box">
+                <div class="eq-label">Eq (1): Kernel Histogram</div>
+                <code>H_ij(g) = Σ_{x=i-r}^{i+r} Σ_{y=j-r}^{j+r} [I_xy = g]</code>
+                <div class="comment">// Count of gray value g in window centered at (i,j)</div>
+            </div>
+
+            <div class="eq-box">
+                <div class="eq-label">Eq (2): Cumulative Histogram</div>
+                <code>C_ij(g) = Σ_{k=0}^{g} H_ij(k)</code>
+                <div class="comment">// # pixels with value ≤ g</div>
+            </div>
+        </div>
+
+        <!-- Section 3.2: Sliding Window -->
+        <div class="section">
+            <h2>§3.2 Sliding-Window Histogram — The Key to O(1)</h2>
+            
+            <h3>Evolution of Methods</h3>
+            <table>
+                <tr>
+                    <th>Method</th>
+                    <th>Complexity</th>
+                    <th>Idea</th>
+                </tr>
+                <tr>
+                    <td>Naive</td>
+                    <td><span class="complexity bad">O(r²)</span></td>
+                    <td>Recompute full histogram each pixel</td>
+                </tr>
+                <tr>
+                    <td>Huang et al.</td>
+                    <td><span class="complexity mid">O(r)</span></td>
+                    <td>Update: remove left col, add right col</td>
+                </tr>
+                <tr>
+                    <td>Zig-zag (Kong)</td>
+                    <td><span class="complexity mid">O(r)</span></td>
+                    <td>Avoid row-start reinit via serpentine scan</td>
+                </tr>
+                <tr>
+                    <td><strong>Perreault-Hébert</strong></td>
+                    <td><span class="complexity">O(1)</span></td>
+                    <td>Column histograms + kernel = Σ columns</td>
+                </tr>
+            </table>
+
+            <h3>Perreault-Hébert Method (Used in This Paper)</h3>
+            
+            <div class="eq-box">
+                <div class="eq-label">Eq (3): Column Histogram</div>
+                <code>h_c(g) = Σ_{x=i-r}^{i+r} [I_xc = g]</code>
+                <div class="comment">// Histogram of column c, rows [i-r, i+r]</div>
+            </div>
+
+            <div class="eq-box">
+                <div class="eq-label">Eq (4): Kernel = Sum of Column Histograms</div>
+                <code>H_ij(g) = Σ_{c=j-r}^{j+r} h_c(g)</code>
+                <div class="comment">// Kernel histogram is sum of 2r+1 column histograms</div>
+            </div>
+
+            <div class="key-point">
+                <strong>Why O(1)?</strong> Maintain N column histograms. When window slides:
+                <ul style="margin-top:10px">
+                    <li><strong>Horizontal move:</strong> Kernel update = subtract <code>h_{j-r}</code>, add <code>h_{j+r+1}</code> → <span class="complexity">O(L)</span> = O(1)</li>
+                    <li><strong>Vertical move (new row):</strong> Update ALL column histograms: remove top pixel, add bottom pixel → O(N) amortized over row</li>
+                </ul>
+                Per-pixel cost: <strong>O(L) operations</strong>, independent of r!
+            </div>
+
+            <h3>Visual: Horizontal Slide</h3>
+            <div class="grid-demo">
+                <div>
+                    <p style="font-size:0.85em; margin-bottom:8px;"><strong>Before slide:</strong></p>
+                    <div class="mini-grid" style="grid-template-columns: repeat(7, 40px);">
+                        <div class="cell" style="background:#cbd5e0">·</div>
+                        <div class="cell hl-red" style="background:#fc8181">−</div>
+                        <div class="cell" style="background:#9ae6b4">·</div>
+                        <div class="cell" style="background:#9ae6b4">·</div>
+                        <div class="cell" style="background:#9ae6b4">·</div>
+                        <div class="cell" style="background:#cbd5e0">·</div>
+                        <div class="cell" style="background:#cbd5e0">·</div>
+                        
+                        <div class="cell" style="background:#cbd5e0">·</div>
+                        <div class="cell hl-red" style="background:#fc8181">−</div>
+                        <div class="cell" style="background:#9ae6b4">·</div>
+                        <div class="cell" style="background:#68d391">●</div>
+                        <div class="cell" style="background:#9ae6b4">·</div>
+                        <div class="cell" style="background:#cbd5e0">·</div>
+                        <div class="cell" style="background:#cbd5e0">·</div>
+                        
+                        <div class="cell" style="background:#cbd5e0">·</div>
+                        <div class="cell hl-red" style="background:#fc8181">−</div>
+                        <div class="cell" style="background:#9ae6b4">·</div>
+                        <div class="cell" style="background:#9ae6b4">·</div>
+                        <div class="cell" style="background:#9ae6b4">·</div>
+                        <div class="cell" style="background:#cbd5e0">·</div>
+                        <div class="cell" style="background:#cbd5e0">·</div>
+                    </div>
+                    <p style="font-size:0.8em; color:#718096; margin-top:5px;">Green = window, ● = center</p>
+                </div>
+                <div style="font-size:2em; color:#805ad5;">→</div>
+                <div>
+                    <p style="font-size:0.85em; margin-bottom:8px;"><strong>After slide right:</strong></p>
+                    <div class="mini-grid" style="grid-template-columns: repeat(7, 40px);">
+                        <div class="cell" style="background:#cbd5e0">·</div>
+                        <div class="cell" style="background:#cbd5e0">·</div>
+                        <div class="cell" style="background:#9ae6b4">·</div>
+                        <div class="cell" style="background:#9ae6b4">·</div>
+                        <div class="cell" style="background:#9ae6b4">·</div>
+                        <div class="cell hl-green" style="background:#68d391">+</div>
+                        <div class="cell" style="background:#cbd5e0">·</div>
+                        
+                        <div class="cell" style="background:#cbd5e0">·</div>
+                        <div class="cell" style="background:#cbd5e0">·</div>
+                        <div class="cell" style="background:#9ae6b4">·</div>
+                        <div class="cell" style="background:#9ae6b4">·</div>
+                        <div class="cell" style="background:#68d391">●</div>
+                        <div class="cell hl-green" style="background:#68d391">+</div>
+                        <div class="cell" style="background:#cbd5e0">·</div>
+                        
+                        <div class="cell" style="background:#cbd5e0">·</div>
+                        <div class="cell" style="background:#cbd5e0">·</div>
+                        <div class="cell" style="background:#9ae6b4">·</div>
+                        <div class="cell" style="background:#9ae6b4">·</div>
+                        <div class="cell" style="background:#9ae6b4">·</div>
+                        <div class="cell hl-green" style="background:#68d391">+</div>
+                        <div class="cell" style="background:#cbd5e0">·</div>
+                    </div>
+                    <p style="font-size:0.8em; color:#718096; margin-top:5px;"><span class="tag tag-remove">−h_old</span> <span class="tag tag-new">+h_new</span></p>
+                </div>
+            </div>
+
+            <div class="eq-box">
+                <div class="eq-label">Update Formula</div>
+                <code>H_new = H_old − h_{j-r} + h_{j+r+1}</code>
+                <div class="comment">// Just 2 histogram additions (L bins each) = O(L) = O(1) w.r.t. r</div>
+            </div>
+        </div>
+
+        <!-- Section 3.3: HE Transfer Function -->
+        <div class="section">
+            <h2>§3.3 Histogram Equalization Transfer Function</h2>
+
+            <div class="eq-box">
+                <div class="eq-label">Eq (5): Standard HE Transfer</div>
+                <code>f(g) = (L-1)/n · C(g) = (L-1)/n · Σ_{k=0}^{g} H(k)</code>
+                <div class="comment">// n = (2r+1)² = window pixel count</div>
+            </div>
+
+            <p><strong>Problem:</strong> Computing C(g) naively requires up to L additions.</p>
+
+            <h3>Optimization: Split Summation</h3>
+            
+            <div class="eq-box">
+                <div class="eq-label">Eq (6): Conservation Property</div>
+                <code>n = Σ_{k=0}^{L-1} H(k) = Σ_{k=0}^{g} H(k) + Σ_{k=g+1}^{L-1} H(k)</code>
+            </div>
+
+            <div class="eq-box">
+                <div class="eq-label">Eq (7): Smart C(g) Computation</div>
+                <code>C(g) = { Σ_{k=0}^{g} H(k)           if g < L/2
+        { n − Σ_{k=g+1}^{L-1} H(k)   otherwise</code>
+                <div class="comment">// Always ≤ L/2 additions! For L=256: max 128 ops</div>
+            </div>
+
+            <div class="key-point">
+                <strong>Result:</strong> Transfer function computation is <span class="complexity">O(L)</span> — constant w.r.t. window size r.
+            </div>
+        </div>
+
+        <!-- Section 3.4: CLAHE -->
+        <div class="section">
+            <h2>§3.4 CLAHE: Histogram Clipping</h2>
+            
+            <p><strong>Goal:</strong> Limit contrast amplification by clipping histogram bins at threshold C, redistributing excess evenly.</p>
+
+            <div class="algo-box">
+                <div class="algo-title">Algorithm 2: Naive Clipped Histogram Ĥ</div>
+                <pre>n_C ← 0
+for g = 0 to L-1:
+    if H(g) > C:
+        n_C ← n_C + H(g) − C    <span style="color:#718096">// accumulate excess</span>
+        Ĥ(g) ← C
+    else:
+        Ĥ(g) ← H(g)
+for g = 0 to L-1:
+    Ĥ(g) ← Ĥ(g) + n_C/L         <span style="color:#718096">// redistribute</span></pre>
+            </div>
+
+            <div class="eq-box">
+                <div class="eq-label">Eq (8): CLAHE Transfer Function</div>
+                <code>f̂(g) = (L-1)/n · Σ_{k=0}^{g} Ĥ(k)</code>
+            </div>
+
+            <h3>Optimization: Implicit Clipped Cumulative</h3>
+            <p><strong>Key insight:</strong> We only need Ĉ(g) for the center pixel's gray value, not the full Ĥ!</p>
+
+            <div class="eq-box">
+                <div class="eq-label">Eq (9): Decompose Clipped Sum</div>
+                <code>Σ_{k=0}^{g} Ĥ(k) = Σ_{k=0}^{g} (min{H(k),C} + n_C/L)
+               = (g+1)·n_C/L + Σ_{k=0}^{g} min{H(k),C}</code>
+            </div>
+
+            <div class="eq-box">
+                <div class="eq-label">Eq (10): Compute n_C Without Full Pass</div>
+                <code>n_C = Σ_{k=0}^{L-1} max{0, H(k)−C} = n − Σ_{k=0}^{L-1} min{H(k),C}</code>
+            </div>
+
+            <div class="algo-box">
+                <div class="algo-title">Algorithm 3: Efficient Ĉ(g) in Single Pass</div>
+                <pre>Ĉ(g) ← 0
+n_C ← n                          <span style="color:#718096">// will become excess count</span>
+for k = 0 to L-1:
+    if k ≤ g:
+        Ĉ(g) ← Ĉ(g) + min{H(k), C}
+    n_C ← n_C − min{H(k), C}     <span style="color:#718096">// subtract clipped values</span>
+Ĉ(g) ← Ĉ(g) + (g+1)·n_C/L       <span style="color:#718096">// add redistribution</span></pre>
+            </div>
+
+            <div class="key-point">
+                <strong>Complexity:</strong> Single pass over L bins → <span class="complexity">O(L)</span> per pixel, independent of r.<br>
+                <strong>Speedup:</strong> 8.6–14.5% faster than Algorithm 2.
+            </div>
+        </div>
+
+        <!-- Section 3.5: Multilevel Histograms -->
+        <div class="section">
+            <h2>§3.5 Multilevel Histograms (Optional Optimization)</h2>
+            
+            <p><strong>Idea:</strong> Maintain coarse (16 bins) + fine (256 bins) histograms. Each coarse bin = sum of 16 fine bins.</p>
+
+            <div class="compare-box">
+                <div class="compare-item before">
+                    <strong>Standard: 256 bins</strong><br>
+                    C(g) = Σ all bins up to g<br>
+                    Up to 128 additions
+                </div>
+                <div class="compare-item after">
+                    <strong>Multilevel: 16+256 bins</strong><br>
+                    C(g) = Σ coarse + partial fine<br>
+                    ~16 + 8 = 24 additions
+                </div>
+            </div>
+
+            <h3>Two Optimizations</h3>
+            <ol>
+                <li><strong>Faster cumulative sum:</strong> Sum coarse bins first, then only the relevant fine segment</li>
+                <li><strong>Lazy fine updates:</strong> Only compute fine segments on-demand (beneficial for smooth images)</li>
+            </ol>
+
+            <h3>CLAHE with Multilevel</h3>
+            <p><strong>Trick:</strong> Skip fine segment if coarse bin ≤ C (no bins in segment can exceed clip limit).</p>
+            
+            <div class="key-point">
+                <strong>Caveat:</strong> Works well for high clip limits (C=0.1n). For low clip limits (C=0.01n), too many segments need clipping → overhead dominates → can be <em>slower</em> (up to 47% worse).
+            </div>
+
+            <table>
+                <tr>
+                    <th>Config</th>
+                    <th>AHE Speedup</th>
+                    <th>CLAHE (C=0.1n)</th>
+                    <th>CLAHE (C=0.01n)</th>
+                </tr>
+                <tr>
+                    <td>16 coarse bins</td>
+                    <td>+17–30%</td>
+                    <td>+8–20%</td>
+                    <td>−9 to −47% ⚠️</td>
+                </tr>
+                <tr>
+                    <td>8 coarse bins</td>
+                    <td>+26–32%</td>
+                    <td>+26–36%</td>
+                    <td>+16% (r=25 only)</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Section 4: Results -->
+        <div class="section">
+            <h2>§4 Experimental Results</h2>
+            
+            <p><strong>Setup:</strong> 25 grayscale images, 1000×1000 px, Intel i9-10900X, single-threaded C implementation.</p>
+
+            <h3>Sliding Window Comparison (AHE)</h3>
+            <table>
+                <tr>
+                    <th>Method</th>
+                    <th>r=9</th>
+                    <th>r=150</th>
+                    <th>r=300</th>
+                </tr>
+                <tr>
+                    <td>Naive O(r²)</td>
+                    <td>~50ms</td>
+                    <td>>10s</td>
+                    <td>>>10s</td>
+                </tr>
+                <tr>
+                    <td>Huang O(r)</td>
+                    <td>~45ms</td>
+                    <td>~500ms</td>
+                    <td>~900ms</td>
+                </tr>
+                <tr>
+                    <td><strong>This paper O(1)</strong></td>
+                    <td>~45ms</td>
+                    <td>~46ms</td>
+                    <td>~48ms</td>
+                </tr>
+            </table>
+
+            <h3>Best Configurations (with all optimizations)</h3>
+            <table>
+                <tr>
+                    <th>Algorithm</th>
+                    <th>r=25</th>
+                    <th>r=150</th>
+                    <th>r=300</th>
+                </tr>
+                <tr>
+                    <td>AHE (8 coarse bins)</td>
+                    <td>27.4ms</td>
+                    <td>33.5ms</td>
+                    <td>35.2ms</td>
+                </tr>
+                <tr>
+                    <td>CLAHE C=0.1n (8 bins)</td>
+                    <td>44.1ms</td>
+                    <td>52.9ms</td>
+                    <td>55.7ms</td>
+                </tr>
+            </table>
+
+            <div class="key-point">
+                <strong>Key Results:</strong>
+                <ul style="margin-top:10px">
+                    <li>O(1) matches O(r) at r≈9, dominates for larger r</li>
+                    <li>At r=300: <strong>94% faster</strong> than O(r) methods</li>
+                    <li>Runtime nearly constant: 45ms regardless of filter size</li>
+                    <li>SAD (Sum of Absolute Differences) = 0 → <strong>exact results</strong>, no artifacts</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Summary -->
+        <div class="section">
+            <h2>Summary: The Three Key Techniques</h2>
+            
+            <table>
+                <tr>
+                    <th>#</th>
+                    <th>Technique</th>
+                    <th>What It Does</th>
+                    <th>Complexity</th>
+                </tr>
+                <tr>
+                    <td>1</td>
+                    <td>Column Histograms<br>(Perreault-Hébert)</td>
+                    <td>H = Σ column histograms<br>Update: −h_left + h_right</td>
+                    <td><span class="complexity">O(L)</span> per pixel</td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td>Split Cumulative Sum<br>(Eq. 7)</td>
+                    <td>Sum from 0→g or g→L-1<br>whichever is shorter</td>
+                    <td><span class="complexity">O(L/2)</span></td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td>Implicit CLAHE<br>(Algorithm 3)</td>
+                    <td>Compute Ĉ(g) directly<br>without full Ĥ</td>
+                    <td><span class="complexity">O(L)</span></td>
+                </tr>
+                <tr>
+                    <td>4*</td>
+                    <td>Multilevel Histograms</td>
+                    <td>Coarse+fine bins<br>Skip segments</td>
+                    <td>Up to 32% faster<br>(image-dependent)</td>
+                </tr>
+            </table>
+
+            <div class="key-point" style="background:#c6f6d5; border-color:#38a169;">
+                <strong>Bottom Line:</strong> By combining column histograms (O(1) sliding window) with efficient transfer function computation (O(L)), the overall per-pixel complexity becomes <strong>O(1) with respect to filter radius r</strong>. This enables real-time AHE/CLAHE for any window size.
+            </div>
+        </div>
+
+        <p style="color:#718096; text-align:center; margin-top:30px; font-size:0.85em;">
+            Paper: Härtinger & Steger, J. Real-Time Image Processing (2024) 21:93<br>
+            DOI: 10.1007/s11554-024-01465-1
+        </p>
+    </div>
+</body>
+</html>

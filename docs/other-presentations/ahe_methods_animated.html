@@ -1,0 +1,2375 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AHE O(1) - Sliding Window Methods Animated</title>
+    <script>
+        MathJax = {
+            tex: {
+                inlineMath: [["$", "$"], ["\\(", "\\)"]],
+                displayMath: [["$$", "$$"], ["\\[", "\\]"]],
+            },
+            svg: { fontCache: "global" },
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Segoe UI", sans-serif;
+            line-height: 1.8;
+            color: #1a202c;
+            background: #f7fafc;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 1.8em;
+            color: #2d3748;
+            margin-bottom: 5px;
+        }
+
+        h2 {
+            font-size: 1.4em;
+            color: #553c9a;
+            margin: 35px 0 20px 0;
+            padding: 12px 18px;
+            background: linear-gradient(90deg, #e9d8fd, transparent);
+            border-left: 4px solid #805ad5;
+        }
+
+        h3 {
+            font-size: 1.15em;
+            color: #2d3748;
+            margin: 25px 0 12px 0;
+        }
+
+        p {
+            margin-bottom: 14px;
+        }
+
+        .section {
+            background: white;
+            padding: 30px;
+            margin-bottom: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.06);
+        }
+
+        .subtitle {
+            color: #718096;
+            margin-bottom: 25px;
+        }
+
+        .eq-box {
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 18px 22px;
+            border-radius: 8px;
+            margin: 18px 0;
+            overflow-x: auto;
+        }
+
+        .eq-box .eq-label {
+            color: #68d391;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .eq-box .comment {
+            color: #718096;
+            font-style: italic;
+        }
+
+        .pseudo-code {
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: "Courier New", monospace;
+            font-size: 0.85em;
+            margin-bottom: 10px;
+            overflow-x: auto;
+            line-height: 1.4;
+        }
+
+        .key-point {
+            background: #ebf8ff;
+            border-left: 4px solid #3182ce;
+            padding: 15px 18px;
+            margin: 18px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .key-point.success {
+            background: #c6f6d5;
+            border-color: #38a169;
+        }
+
+        .key-point.warning {
+            background: #fefcbf;
+            border-color: #d69e2e;
+        }
+
+        .complexity {
+            display: inline-block;
+            background: #48bb78;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        .complexity.bad {
+            background: #f56565;
+        }
+
+        .complexity.mid {
+            background: #ed8936;
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #805ad5, #553c9a);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(128, 90, 213, 0.4);
+        }
+
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+
+        .btn-secondary:hover {
+            background: #cbd5e0;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn.active {
+            background: #38a169;
+        }
+
+        /* Method selector tabs */
+        .method-tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 10px;
+        }
+
+        .method-tab {
+            padding: 10px 20px;
+            border: none;
+            background: #edf2f7;
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .method-tab.active {
+            background: #805ad5;
+            color: white;
+        }
+
+        .method-tab:hover:not(.active) {
+            background: #e2e8f0;
+        }
+
+        /* Animation container */
+        .anim-container {
+            background: #f7fafc;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 20px 0;
+        }
+
+        .anim-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            align-items: start;
+        }
+
+        @media (max-width: 900px) {
+            .anim-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .anim-panel {
+            text-align: center;
+        }
+
+        .anim-panel-title {
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #2d3748;
+            font-size: 1.05em;
+        }
+
+        /* Grid cells */
+        .mini-grid {
+            display: inline-grid;
+            gap: 2px;
+            background: #2d3748;
+            padding: 2px;
+            border-radius: 6px;
+        }
+
+        .cell {
+            width: 38px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7em;
+            font-weight: bold;
+            border-radius: 3px;
+            transition: all 0.25s ease;
+            position: relative;
+        }
+
+        .cell-label {
+            position: absolute;
+            top: 1px;
+            left: 2px;
+            font-size: 0.5em;
+            opacity: 0.6;
+        }
+
+        .cell-gray {
+            background: #a0aec0;
+            color: #2d3748;
+        }
+
+        .cell-window {
+            background: #9ae6b4;
+            color: #1a202c;
+        }
+
+        .cell-center {
+            background: #38a169;
+            color: white;
+        }
+
+        .cell-scanning {
+            background: #fbd38d;
+            color: #1a202c;
+            animation: pulse 0.3s ease;
+        }
+
+        .cell-remove {
+            background: #fc8181;
+            color: #1a202c;
+            box-shadow: inset 0 0 0 2px #c53030;
+        }
+
+        .cell-add {
+            background: #68d391;
+            color: #1a202c;
+            box-shadow: inset 0 0 0 2px #276749;
+        }
+
+        .cell-processed {
+            background: #b794f4;
+            color: white;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.15);
+            }
+        }
+
+        /* Histogram display */
+        .histogram-display {
+            margin-top: 20px;
+        }
+
+        .histogram-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .histogram-label {
+            width: 80px;
+            text-align: right;
+            font-size: 0.85em;
+            color: #4a5568;
+        }
+
+        .histogram-bars {
+            display: flex;
+            gap: 2px;
+            align-items: flex-end;
+            height: 40px;
+            padding: 5px;
+            background: #2d3748;
+            border-radius: 4px;
+            flex: 1;
+        }
+
+        .hist-bar {
+            width: 20px;
+            background: #805ad5;
+            border-radius: 2px 2px 0 0;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .hist-bar.highlight {
+            background: #f6ad55;
+        }
+
+        .hist-bar.adding {
+            background: #68d391;
+        }
+
+        .hist-bar.removing {
+            background: #fc8181;
+        }
+
+        /* Operation counter */
+        .op-display {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .op-box {
+            background: #edf2f7;
+            padding: 15px 25px;
+            border-radius: 10px;
+            text-align: center;
+            min-width: 120px;
+        }
+
+        .op-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #805ad5;
+        }
+
+        .op-value.counting {
+            color: #38a169;
+        }
+
+        .op-label {
+            font-size: 0.8em;
+            color: #718096;
+        }
+
+        /* Status display */
+        .status-display {
+            text-align: center;
+            padding: 12px 20px;
+            background: #edf2f7;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-size: 0.95em;
+            min-height: 45px;
+        }
+
+        .status-display.highlight {
+            background: #c6f6d5;
+            font-weight: 600;
+        }
+
+        /* Vector operation visualization */
+        .vector-op-container {
+            background: #1a202c;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 20px 0;
+        }
+
+        .vector-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+
+        .vector-box {
+            display: flex;
+            gap: 3px;
+            padding: 8px;
+            background: #2d3748;
+            border-radius: 6px;
+        }
+
+        .vector-cell {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75em;
+            font-weight: bold;
+            border-radius: 4px;
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .vector-label {
+            color: #a0aec0;
+            font-size: 0.9em;
+            min-width: 60px;
+            text-align: center;
+        }
+
+        .vector-op-symbol {
+            color: #fbd38d;
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        /* Column histogram structure */
+        .col-struct-container {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+
+        .col-hist-stack {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .col-hist-cell {
+            width: 45px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7em;
+            font-weight: bold;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .col-hist-header {
+            font-weight: bold;
+            font-size: 0.85em;
+            color: #4a5568;
+            margin-bottom: 5px;
+        }
+
+        .col-in-window {
+            background: #9ae6b4;
+            color: #1a202c;
+        }
+
+        .col-outside {
+            background: #cbd5e0;
+            color: #4a5568;
+        }
+
+        .col-removing {
+            background: #fc8181;
+            color: #1a202c;
+        }
+
+        .col-adding {
+            background: #68d391;
+            color: #1a202c;
+        }
+
+        /* Legend */
+        .legend {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8em;
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+        }
+
+        /* Progress bar */
+        .progress-container {
+            margin: 20px 0;
+        }
+
+        .progress-bar-bg {
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #805ad5, #553c9a);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8em;
+            color: #718096;
+            margin-top: 5px;
+        }
+
+        /* Comparison summary */
+        .comparison-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin: 25px 0;
+        }
+
+        .comparison-card {
+            background: #f7fafc;
+            border-radius: 12px;
+            padding: 20px;
+            border: 2px solid #e2e8f0;
+            transition: all 0.3s ease;
+        }
+
+        .comparison-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .comparison-card.best {
+            border-color: #38a169;
+            background: #f0fff4;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .card-title {
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        .card-metric {
+            text-align: center;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+
+        .card-metric-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #805ad5;
+        }
+
+        .card-metric-label {
+            font-size: 0.8em;
+            color: #718096;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 18px 0;
+            font-size: 0.95em;
+        }
+
+        th,
+        td {
+            padding: 12px 14px;
+            border: 1px solid #e2e8f0;
+            text-align: center;
+        }
+
+        th {
+            background: #805ad5;
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background: #f7fafc;
+        }
+
+        .highlight-row {
+            background: #c6f6d5 !important;
+        }
+
+        .math-display {
+            overflow-x: auto;
+            padding: 10px 0;
+        }
+
+        /* Column histogram visual */
+        .col-hist-visual {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+            margin: 10px 0;
+        }
+
+        .col-hist-bar {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .col-hist-box {
+            width: 40px;
+            height: 25px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7em;
+            font-weight: bold;
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .col-hist-label {
+            font-size: 0.7em;
+            color: #718096;
+        }
+
+        /* Comparison Animation */
+        .race-container {
+            background: #1a202c;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 20px 0;
+        }
+
+        .race-title {
+            color: #e2e8f0;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .race-track {
+            margin-bottom: 15px;
+        }
+
+        .race-label {
+            color: #a0aec0;
+            font-size: 0.85em;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .race-bar-bg {
+            height: 30px;
+            background: #2d3748;
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .race-bar {
+            height: 100%;
+            border-radius: 15px;
+            transition: width 0.1s linear;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 10px;
+            font-size: 0.8em;
+            font-weight: bold;
+            color: white;
+        }
+
+        .race-bar.naive {
+            background: linear-gradient(90deg, #fc8181, #c53030);
+        }
+
+        .race-bar.huang {
+            background: linear-gradient(90deg, #f6ad55, #dd6b20);
+        }
+
+        .race-bar.perreault {
+            background: linear-gradient(90deg, #68d391, #38a169);
+        }
+
+        /* Explanation Layout */
+        .explanation-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            align-items: start;
+            margin-bottom: 15px;
+        }
+
+        /* Step boxes */
+        .step-container {
+            margin: 25px 0;
+        }
+
+        .step-box {
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            position: relative;
+        }
+
+        .step-box.highlight {
+            border-color: #805ad5;
+            background: #faf5ff;
+        }
+
+        .step-number {
+            position: absolute;
+            top: -12px;
+            left: 20px;
+            background: #805ad5;
+            color: white;
+            padding: 4px 14px;
+            border-radius: 15px;
+            font-weight: bold;
+            font-size: 0.85em;
+        }
+
+        .step-title {
+            font-weight: bold;
+            color: #2d3748;
+            margin-bottom: 10px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="section">
+            <h1>Evolution of Sliding-Window Methods</h1>
+            <p class="subtitle">Interactive comparison: Naive O(r²) → Huang O(r) → Perreault O(1)</p>
+        </div>
+
+        <!-- Method Comparison Animation -->
+        <div class="section">
+            <h2>Interactive Method Comparison</h2>
+
+            <p>Select a method and watch how it computes the histogram for each window position. Observe the number of
+                operations required.</p>
+
+            <div class="method-tabs">
+                <button class="method-tab active" onclick="selectMethod('naive')">
+                    Naive <span class="complexity bad">O(r²)</span>
+                </button>
+                <button class="method-tab" onclick="selectMethod('huang')">
+                    Huang <span class="complexity mid">O(r)</span>
+                </button>
+                <button class="method-tab" onclick="selectMethod('perreault')">
+                    Perreault <span class="complexity">O(1)</span>
+                </button>
+            </div>
+
+            <div class="anim-container">
+                <div class="anim-layout">
+                    <!-- Image Grid Panel -->
+                    <div class="anim-panel">
+                        <div class="anim-panel-title">Image Grid (7×5, r=1)</div>
+                        <div class="mini-grid" id="method-grid" style="grid-template-columns: repeat(7, 38px);"></div>
+
+                        <div class="status-display" id="method-status">
+                            Click "Step" or "Play" to start
+                        </div>
+
+                        <div class="controls">
+                            <button class="btn btn-secondary" onclick="resetMethodAnim()">⟲ Reset</button>
+                            <button class="btn btn-primary" id="btn-method-step" onclick="stepMethodAnim()">→
+                                Step</button>
+                            <button class="btn btn-primary" id="btn-method-play" onclick="playMethodAnim()">▶
+                                Play</button>
+                            <button class="btn btn-secondary" id="btn-method-pause" onclick="pauseMethodAnim()"
+                                disabled>⏸ Pause</button>
+                        </div>
+                    </div>
+
+                    <!-- Histogram & Stats Panel -->
+                    <div class="anim-panel">
+                        <div class="anim-panel-title">Histogram $H_{i,j}$</div>
+
+                        <div class="histogram-display">
+                            <div class="histogram-row">
+                                <div class="histogram-label">Kernel H:</div>
+                                <div class="histogram-bars" id="method-histogram"></div>
+                            </div>
+                        </div>
+
+                        <div class="op-display">
+                            <div class="op-box">
+                                <div class="op-value" id="method-ops-current">0</div>
+                                <div class="op-label">Ops this step</div>
+                            </div>
+                            <div class="op-box">
+                                <div class="op-value" id="method-ops-total">0</div>
+                                <div class="op-label">Total ops</div>
+                            </div>
+                            <div class="op-box">
+                                <div class="op-value" id="method-pixels">0</div>
+                                <div class="op-label">Pixels done</div>
+                            </div>
+                        </div>
+
+                        <div class="progress-container">
+                            <div class="progress-bar-bg">
+                                <div class="progress-bar" id="method-progress" style="width: 0%"></div>
+                            </div>
+                            <div class="progress-label">
+                                <span>Progress</span>
+                                <span id="method-progress-text">0%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Method-specific explanation -->
+                <div id="method-explanation" class="key-point" style="margin-top:20px;">
+                    <strong>Naive Method:</strong> For each pixel, scan ALL (2r+1)² pixels in the window to build
+                    histogram from scratch.
+                </div>
+
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background:#a0aec0;"></div><span>Outside</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background:#9ae6b4;"></div><span>Window</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background:#38a169;"></div><span>Center</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background:#fbd38d;"></div><span>Scanning</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background:#fc8181;"></div><span>Removing</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background:#68d391;"></div><span>Adding</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Column Histograms Deep Dive -->
+        <div class="section">
+            <h2>Column Histograms + Vector Operations (Perreault Method)</h2>
+
+            <h3>Key Insight: Kernel = Sum of Column Histograms</h3>
+
+            <div class="eq-box">
+                <div class="eq-label">The Revolutionary Equation (4)</div>
+                <div class="math-display">
+                    $$H_{i,j}(g) = \sum_{c=j-r}^{j+r} h_c(g) = h_{j-r} + h_{j-r+1} + \cdots + h_{j+r}$$
+                </div>
+                <p class="comment">Kernel histogram = sum of $(2r+1)$ column histograms</p>
+            </div>
+
+            <h3>Interactive: Column Histogram Structure</h3>
+
+            <div class="anim-container">
+                <div class="anim-panel-title">Visualizing Column Histograms (r=1, L=8 bins shown)</div>
+
+                <div class="col-struct-container" id="col-struct-container">
+                    <!-- Generated by JS -->
+                </div>
+
+                <div class="status-display" id="col-struct-status">
+                    Window at column j=3. Kernel H = h₂ + h₃ + h₄
+                </div>
+
+                <div class="controls">
+                    <button class="btn btn-secondary" onclick="resetColStruct()">⟲ Reset</button>
+                    <button class="btn btn-primary" onclick="slideColRight()">→ Slide Right</button>
+                </div>
+
+                <div class="legend" style="margin-top:15px;">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background:#9ae6b4;"></div><span>In window (summed)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background:#cbd5e0;"></div><span>Outside window</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background:#fc8181;"></div><span>Being removed</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background:#68d391;"></div><span>Being added</span>
+                    </div>
+                </div>
+            </div>
+
+            <h3>Vector Operation Animation</h3>
+
+            <p>Watch how the kernel histogram is updated using vector operations when sliding right:</p>
+
+            <div class="vector-op-container">
+                <div class="anim-panel-title" style="color:#e2e8f0;">Update: $H_{new} = H_{old} - h_{left} + h_{right}$
+                </div>
+
+                <div class="vector-row">
+                    <div class="vector-label" style="color:#a0aec0;">$H_{old}$</div>
+                    <div class="vector-box" id="vec-h-old"></div>
+                </div>
+
+                <div class="vector-row">
+                    <div class="vector-op-symbol">−</div>
+                </div>
+
+                <div class="vector-row">
+                    <div class="vector-label" style="color:#fc8181;">$h_{left}$</div>
+                    <div class="vector-box" id="vec-h-left"></div>
+                </div>
+
+                <div class="vector-row">
+                    <div class="vector-op-symbol">+</div>
+                </div>
+
+                <div class="vector-row">
+                    <div class="vector-label" style="color:#68d391;">$h_{right}$</div>
+                    <div class="vector-box" id="vec-h-right"></div>
+                </div>
+
+                <div class="vector-row">
+                    <div class="vector-op-symbol">=</div>
+                </div>
+
+                <div class="vector-row">
+                    <div class="vector-label" style="color:#fbd38d;">$H_{new}$</div>
+                    <div class="vector-box" id="vec-h-new"></div>
+                </div>
+
+                <div class="controls" style="margin-top:20px;">
+                    <button class="btn btn-secondary" onclick="resetVectorAnim()">⟲ Reset</button>
+                    <button class="btn btn-primary" onclick="playVectorAnim()">▶ Animate</button>
+                </div>
+
+                <div class="status-display" id="vector-status"
+                    style="background:#2d3748; color:#e2e8f0; margin-top:15px;">
+                    Operations: <strong>L subtractions + L additions = 2L = 512 ops</strong> (constant!)
+                </div>
+            </div>
+
+            <h3>Why This is O(1)</h3>
+
+            <div class="comparison-cards">
+                <div class="comparison-card">
+                    <div class="card-header">
+                        <span class="card-title">Huang's Method</span>
+                        <span class="complexity mid">O(r)</span>
+                    </div>
+                    <p>Updates histogram <strong>pixel by pixel</strong> in the column:</p>
+                    <div class="card-metric">
+                        <div class="card-metric-value">$2(2r+1)$</div>
+                        <div class="card-metric-label">operations per slide</div>
+                    </div>
+                    <p style="font-size:0.85em; color:#718096;">
+                        At r=100: 402 ops<br>
+                        At r=300: 1,202 ops
+                    </p>
+                </div>
+
+                <div class="comparison-card best">
+                    <div class="card-header">
+                        <span class="card-title">Perreault's Method</span>
+                        <span class="complexity">O(1)</span>
+                    </div>
+                    <p>Updates histogram <strong>as entire vectors</strong>:</p>
+                    <div class="card-metric">
+                        <div class="card-metric-value">$2L = 512$</div>
+                        <div class="card-metric-label">operations per slide</div>
+                    </div>
+                    <p style="font-size:0.85em; color:#718096;">
+                        At r=100: 512 ops<br>
+                        At r=300: 512 ops ← <strong>Same!</strong>
+                    </p>
+                </div>
+            </div>
+
+            <div class="key-point success">
+                <strong>The Magic:</strong> Instead of updating individual bins based on pixel values (which depends on
+                r), we add/subtract <em>entire histogram vectors</em> (which always has L=256 bins). The operation count
+                is fixed at 2L, regardless of window size!
+            </div>
+        </div>
+
+        <!-- SIMD Visualization -->
+        <div class="section">
+            <h2>Bonus: SIMD Parallelization</h2>
+
+            <p>Modern CPUs can process multiple histogram bins simultaneously using SIMD (Single Instruction Multiple
+                Data) instructions.</p>
+
+            <div class="anim-container">
+                <div class="anim-panel-title">SIMD Vector Addition: Processing 8 bins at once (AVX2)</div>
+
+                <div class="vector-op-container" style="background:#2d3748;">
+                    <div id="simd-animation">
+                        <div class="vector-row">
+                            <div class="vector-label">H[0:7]</div>
+                            <div class="vector-box" id="simd-h"></div>
+                            <div class="vector-op-symbol">+</div>
+                            <div class="vector-box" id="simd-add"></div>
+                            <div class="vector-op-symbol">=</div>
+                            <div class="vector-box" id="simd-result"></div>
+                        </div>
+
+                        <div style="color:#718096; text-align:center; margin-top:15px; font-size:0.9em;">
+                            ↓ Single CPU instruction ↓
+                        </div>
+
+                        <div class="vector-row" style="margin-top:10px;">
+                            <div style="color:#68d391; font-size:0.85em;">
+                                256 bins ÷ 8 bins/instruction = <strong>32 instructions</strong> (instead of 256 scalar
+                                ops)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="controls">
+                    <button class="btn btn-primary" onclick="animateSIMD()">▶ Animate SIMD</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Final Summary -->
+        <div class="section">
+            <h2>Complexity Race: O(r²) vs O(r) vs O(1)</h2>
+
+            <p>Compare how many operations each method needs as the window slides. Set the filter radius and watch the
+                race!</p>
+
+            <div class="controls">
+                <label style="display:flex; align-items:center; gap:10px;">
+                    Filter radius $r$:
+                    <input type="range" id="radius-slider" min="5" max="100" value="25" style="width:150px;">
+                    <span id="radius-value">25</span>
+                </label>
+                <button class="btn btn-primary" onclick="startRace()">▶ Start Race</button>
+            </div>
+
+            <div class="race-container">
+                <div class="race-title">Operations per pixel (lower = faster)</div>
+
+                <div class="race-track">
+                    <div class="race-label">
+                        <span>Naive O(r²): <span id="naive-ops">0</span> ops</span>
+                        <span id="naive-formula">(2r+1)² = 2601</span>
+                    </div>
+                    <div class="race-bar-bg">
+                        <div class="race-bar naive" id="naive-bar" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div class="race-track">
+                    <div class="race-label">
+                        <span>Huang O(r): <span id="huang-ops">0</span> ops</span>
+                        <span id="huang-formula">2(2r+1) = 102</span>
+                    </div>
+                    <div class="race-bar-bg">
+                        <div class="race-bar huang" id="huang-bar" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div class="race-track">
+                    <div class="race-label">
+                        <span>Perreault O(1): <span id="perreault-ops">0</span> ops</span>
+                        <span id="perreault-formula">2L + 2 = 514</span>
+                    </div>
+                    <div class="race-bar-bg">
+                        <div class="race-bar perreault" id="perreault-bar" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="key-point" id="race-result" style="display:none;">
+                <strong>Result:</strong> <span id="race-winner"></span>
+            </div>
+        </div>
+
+        <!-- O(1) Derivation with Step Animation -->
+        <div class="section">
+            <h2>Why It's O(1): Step-by-Step Derivation</h2>
+
+            <div class="controls">
+                <button class="btn btn-primary" onclick="animateDerivation()">▶ Animate Steps</button>
+                <button class="btn btn-secondary" onclick="resetDerivation()">⟲ Reset</button>
+            </div>
+
+            <div class="step-container">
+                <div class="step-box" id="deriv-step-1">
+                    <div class="step-number">Step 1</div>
+                    <div class="step-title">Data Structure: Maintain $N$ Column Histograms</div>
+
+                    <p>For an image with $N$ columns, we maintain:</p>
+                    <div class="math-display">
+                        $$h_0, h_1, h_2, \ldots, h_{N-1} \quad \text{where each } h_c \in \mathbb{N}^L$$
+                    </div>
+
+                    <div class="col-hist-visual" id="step1-visual">
+                        <!-- Generated by JS -->
+                    </div>
+
+                    <p><strong>Memory:</strong> $N \times L$ integers (e.g., $1000 \times 256 = 256\text{KB}$)</p>
+                </div>
+
+                <div class="step-box" id="deriv-step-2" style="opacity: 0.4;">
+                    <div class="step-number">Step 2</div>
+                    <div class="step-title">Horizontal Slide: Update Kernel Histogram</div>
+
+                    <p>When the window moves from $(i, j)$ to $(i, j+1)$:</p>
+
+                    <div class="eq-box">
+                        <div class="eq-label">Update Rule</div>
+                        <div class="math-display">
+                            $$H_{i,j+1} = H_{i,j} - h_{j-r} + h_{j+r+1}$$
+                        </div>
+                    </div>
+
+                    <p><strong>Operation breakdown:</strong></p>
+                    <ul>
+                        <li>Subtract entire column histogram $h_{j-r}$ (leftmost column exiting)</li>
+                        <li>Add entire column histogram $h_{j+r+1}$ (new rightmost column entering)</li>
+                    </ul>
+
+                    <p><strong>Cost:</strong></p>
+                    <div class="math-display">
+                        $$\underbrace{L \text{ subtractions}}_{\text{remove } h_{j-r}} + \underbrace{L \text{
+                        additions}}_{\text{add } h_{j+r+1}} = 2L = 512 \text{ operations}$$
+                    </div>
+                </div>
+
+                <div class="step-box" id="deriv-step-3" style="opacity: 0.4;">
+                    <div class="step-number">Step 3</div>
+                    <div class="step-title">Vertical Move: Update All Column Histograms</div>
+
+                    <p>When moving to the next row (from row $i$ to row $i+1$):</p>
+
+                    <div class="eq-box">
+                        <div class="eq-label">Column Histogram Update</div>
+                        <div class="math-display">
+                            $$h_c^{\text{new}}(g) = h_c^{\text{old}}(g) - \left[\mathcal{I}_{i-r, c} = g\right] +
+                            \left[\mathcal{I}_{i+r+1, c} = g\right]$$
+                        </div>
+                    </div>
+
+                    <p><strong>Amortized cost per pixel:</strong></p>
+                    <div class="math-display">
+                        $$\frac{2N \text{ (row update)}}{N \text{ (pixels per row)}} = 2 \text{ operations per pixel}$$
+                    </div>
+                </div>
+
+                <div class="step-box highlight" id="deriv-step-4" style="opacity: 0.4;">
+                    <div class="step-number">Step 4</div>
+                    <div class="step-title">Total Per-Pixel Complexity</div>
+
+                    <div class="eq-box">
+                        <div class="eq-label">Final Complexity</div>
+                        <div class="math-display">
+                            $$\underbrace{2L}_{\text{kernel update}} + \underbrace{2}_{\text{column update (amortized)}}
+                            = 2L + 2 = O(L) = O(1) \text{ w.r.t. } r$$
+                        </div>
+                    </div>
+
+                    <div class="key-point success">
+                        <strong>Key:</strong> $2L + 2 = 514$ is a <em>constant</em> — independent of $r$!
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Comprehensive Comparison Table -->
+        <div class="section">
+            <h2>Comprehensive Complexity Comparison</h2>
+
+            <table>
+                <tr>
+                    <th>Method</th>
+                    <th>Per-Pixel Operations</th>
+                    <th>At $r=10$</th>
+                    <th>At $r=100$</th>
+                    <th>At $r=300$</th>
+                </tr>
+                <tr>
+                    <td>Naive <span class="complexity bad">O(r²)</span></td>
+                    <td>$(2r+1)^2$</td>
+                    <td>441</td>
+                    <td>40,401</td>
+                    <td>361,201</td>
+                </tr>
+                <tr>
+                    <td>Huang <span class="complexity mid">O(r)</span></td>
+                    <td>$2(2r+1)$</td>
+                    <td>42</td>
+                    <td>402</td>
+                    <td>1,202</td>
+                </tr>
+                <tr>
+                    <td>Zig-zag <span class="complexity mid">O(r)</span></td>
+                    <td>$2(2r+1)$*</td>
+                    <td>42</td>
+                    <td>402</td>
+                    <td>1,202</td>
+                </tr>
+                <tr class="highlight-row">
+                    <td>Perreault <span class="complexity">O(1)</span></td>
+                    <td>$2L + 2 = 514$</td>
+                    <td>514</td>
+                    <td>514</td>
+                    <td>514</td>
+                </tr>
+            </table>
+
+            <p style="font-size: 0.85em; color: #718096">
+                *Zig-zag avoids row-start reinitialization, giving ~8% speedup at large $r$, but same asymptotic
+                complexity.
+            </p>
+
+            <div class="key-point">
+                <strong>Crossover Analysis:</strong>
+                <div class="math-display">
+                    $$2(2r+1) = 2L + 2 \quad \Rightarrow \quad r = \frac{L}{2} = 128$$
+                </div>
+                <p>Theoretically, O(1) wins when $r > 128$. In practice, due to SIMD vectorization, crossover occurs
+                    around <strong>$r \approx 9$</strong>.</p>
+            </div>
+        </div>
+
+        <!-- Summary -->
+        <div class="section">
+            <h2>Summary</h2>
+
+            <table>
+                <tr>
+                    <th>Aspect</th>
+                    <th>Naive</th>
+                    <th>Huang</th>
+                    <th>Perreault (This Paper)</th>
+                </tr>
+                <tr>
+                    <td><strong>Complexity</strong></td>
+                    <td><span class="complexity bad">O(r²)</span></td>
+                    <td><span class="complexity mid">O(r)</span></td>
+                    <td><span class="complexity">O(1)</span></td>
+                </tr>
+                <tr>
+                    <td><strong>Update unit</strong></td>
+                    <td>Individual pixels</td>
+                    <td>Individual pixels in column</td>
+                    <td>Entire column histograms</td>
+                </tr>
+                <tr>
+                    <td><strong>Memory</strong></td>
+                    <td>$O(L)$</td>
+                    <td>$O(L)$</td>
+                    <td>$O(N \cdot L)$</td>
+                </tr>
+                <tr>
+                    <td><strong>SIMD friendly</strong></td>
+                    <td>No</td>
+                    <td>No</td>
+                    <td><strong>Yes</strong></td>
+                </tr>
+                <tr>
+                    <td><strong>At $r=300$</strong></td>
+                    <td>>>10s</td>
+                    <td>~900ms</td>
+                    <td><strong>~45ms</strong></td>
+                </tr>
+            </table>
+
+            <div class="key-point success">
+                <strong>Key Takeaway:</strong> By representing the kernel histogram as a sum of column histograms (Eq.
+                4), updates become $L$-bin vector operations instead of pixel-by-pixel updates. This transforms $O(r)$
+                per-pixel cost into $O(L) = O(1)$ with respect to filter radius.
+            </div>
+        </div>
+
+        <p style="color: #718096; text-align: center; margin-top: 30px; font-size: 0.85em;">
+            Paper: Härtinger & Steger, J. Real-Time Image Processing (2024) 21:93
+        </p>
+    </div>
+
+    <script>
+        // ============ CONSTANTS ============
+        const ROWS = 5, COLS = 7, RADIUS = 1, L = 8;
+
+        // Generate image data
+        const imageData = Array.from({ length: ROWS }, () =>
+            Array.from({ length: COLS }, () => Math.floor(Math.random() * L))
+        );
+
+        // ============ METHOD COMPARISON ANIMATION ============
+        let currentMethod = 'naive';
+        let methodAnimInterval = null;
+        let methodState = {
+            centerRow: RADIUS,
+            centerCol: RADIUS,
+            totalOps: 0,
+            currentOps: 0,
+            pixelsDone: 0,
+            scanIndex: 0,
+            phase: 'idle', // idle, scanning, updating
+            histogram: new Array(L).fill(0),
+            prevCol: -1,
+            completed: false,
+            removingCol: null,
+            addingCol: null
+        };
+
+        function selectMethod(method) {
+            currentMethod = method;
+            document.querySelectorAll('.method-tab').forEach(tab => tab.classList.remove('active'));
+            // Use event.target if available, otherwise find by onclick attribute or similar. 
+            // In this specific context, event is available from the onclick handler.
+            if (window.event) window.event.target.closest('.method-tab').classList.add('active');
+
+            const explanations = {
+                naive: `
+                    <h3>Naive Approach: O(r²)</h3>
+                    <p>Recompute Full Histogram Per Pixel</p>
+                    <div class="explanation-grid">
+                        <div>
+                            <div class="pseudo-code">
+                            for each pixel (i, j):<br>
+                            &nbsp;&nbsp;H[0..L-1] &larr; 0 // Reset<br>
+                            &nbsp;&nbsp;for x = i-r to i+r:<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;for y = j-r to j+r:<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;H[I[x, y]]++ // Scan window
+                            </div>
+                        </div>
+                        <div>
+                            <p><strong>Complexity Analysis:</strong></p>
+                            <div class="math-display">
+                            $$\\text{Per pixel: } (2r+1)^2 \\text{ bin increments} = O(r^2)$$
+                            </div>
+                        </div>
+                    </div>
+                    <div class="key-point warning">
+                    <strong>Example:</strong> For $r=100$: $(2 \\cdot 100 + 1)^2 = 40{,}401$ operations per pixel!
+                    </div>
+                `,
+                huang: `
+                    <h3>Huang's Algorithm: O(r)</h3>
+                    <p>Incremental Column Update</p>
+                    <div class="explanation-grid">
+                        <div>
+                            <div class="pseudo-code">
+                            // Sliding right:<br>
+                            for x = i-r to i+r: // Remove left col<br>
+                            &nbsp;&nbsp;H[I[x, j-r-1]]--<br>
+                            for x = i-r to i+r: // Add right col<br>
+                            &nbsp;&nbsp;H[I[x, j+r]]++
+                            </div>
+                        </div>
+                        <div>
+                            <p><strong>Complexity Analysis:</strong></p>
+                            <div class="math-display">
+                            $$\\text{Per pixel: } 2 \\times (2r+1) = O(r)$$
+                            </div>
+                            <p>Better, but still depends on radius $r$.</p>
+                        </div>
+                    </div>
+                `,
+                perreault: `
+                    <h3>Perreault-Hébert: O(1)</h3>
+                    <p>Column Histograms + Vector Operations</p>
+                    <div class="explanation-grid">
+                        <div>
+                            <div class="eq-box" style="margin: 0;">
+                            <div class="eq-label">Equation (4)</div>
+                            <div class="math-display">
+                            $$H_{i,j}(g) = \\sum_{c=j-r}^{j+r} h_c(g)$$
+                            </div>
+                            </div>
+                        </div>
+                        <div>
+                            <p><strong>Complexity Analysis:</strong></p>
+                            <div class="math-display">
+                            $$\\underbrace{2L}_{\\text{kernel update}} + \\underbrace{2}_{\\text{column update}} = 2L + 2 = O(1)$$
+                            </div>
+                        </div>
+                    </div>
+                    <div class="key-point success">
+                    <strong>Key:</strong> $2L = 512$ ops is constant, independent of $r$!
+                    </div>
+                `
+            };
+            const explElement = document.getElementById('method-explanation');
+            explElement.innerHTML = explanations[method];
+            if (window.MathJax) MathJax.typesetPromise([explElement]); // Render LaTeX
+
+            resetMethodAnim();
+        }
+
+        function initMethodGrid() {
+            const grid = document.getElementById('method-grid');
+            grid.innerHTML = '';
+            for (let i = 0; i < ROWS; i++) {
+                for (let j = 0; j < COLS; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell cell-gray';
+                    cell.id = `mcell-${i}-${j}`;
+                    cell.innerHTML = `<span class="cell-label">${i},${j}</span>${imageData[i][j]}`;
+                    grid.appendChild(cell);
+                }
+            }
+
+            // Init histogram
+            const histContainer = document.getElementById('method-histogram');
+            histContainer.innerHTML = '';
+            for (let g = 0; g < L; g++) {
+                const bar = document.createElement('div');
+                bar.className = 'hist-bar';
+                bar.id = `mhist-${g}`;
+                bar.style.height = '0px';
+                histContainer.appendChild(bar);
+            }
+        }
+
+        function updateMethodDisplay() {
+            const { centerRow, centerCol, histogram, phase, removingCol, addingCol } = methodState;
+
+            // Update cells
+            for (let i = 0; i < ROWS; i++) {
+                for (let j = 0; j < COLS; j++) {
+                    const cell = document.getElementById(`mcell-${i}-${j}`);
+                    cell.className = 'cell';
+
+                    const inRow = i >= centerRow - RADIUS && i <= centerRow + RADIUS;
+                    const inCol = j >= centerCol - RADIUS && j <= centerCol + RADIUS;
+
+                    // Check if this cell is in the removing or adding column
+                    const isRemoving = removingCol !== null && j === removingCol && inRow;
+                    const isAdding = addingCol !== null && j === addingCol && inRow;
+
+                    if (i === centerRow && j === centerCol) {
+                        cell.classList.add('cell-center');
+                    } else if (isRemoving) {
+                        cell.classList.add('cell-remove');
+                    } else if (isAdding) {
+                        cell.classList.add('cell-add');
+                    } else if (inRow && inCol) {
+                        cell.classList.add('cell-window');
+                    } else {
+                        cell.classList.add('cell-gray');
+                    }
+                }
+            }
+
+            // Update histogram display
+            const maxH = Math.max(...histogram, 1);
+            for (let g = 0; g < L; g++) {
+                const bar = document.getElementById(`mhist-${g}`);
+                bar.style.height = `${(histogram[g] / maxH) * 35}px`;
+                bar.className = 'hist-bar';
+            }
+
+            // Update stats
+            document.getElementById('method-ops-current').textContent = methodState.currentOps;
+            document.getElementById('method-ops-total').textContent = methodState.totalOps;
+            document.getElementById('method-pixels').textContent = methodState.pixelsDone;
+
+            // Progress
+            const totalPixels = (ROWS - 2 * RADIUS) * (COLS - 2 * RADIUS);
+            const progress = (methodState.pixelsDone / totalPixels) * 100;
+            document.getElementById('method-progress').style.width = `${progress}%`;
+            document.getElementById('method-progress-text').textContent = `${Math.round(progress)}%`;
+        }
+
+        function stepMethodAnim() {
+            // Check if already completed
+            if (methodState.completed) return;
+
+            if (currentMethod === 'naive') {
+                stepNaive();
+            } else if (currentMethod === 'huang') {
+                stepHuang();
+            } else {
+                stepPerreault();
+            }
+            updateMethodDisplay();
+            advancePosition();  // Move position AFTER display update
+        }
+
+        function stepNaive() {
+            const { centerRow, centerCol } = methodState;
+
+            // Reset histogram
+            methodState.histogram = new Array(L).fill(0);
+            methodState.currentOps = 0;
+
+            // Scan all pixels in window
+            for (let i = centerRow - RADIUS; i <= centerRow + RADIUS; i++) {
+                for (let j = centerCol - RADIUS; j <= centerCol + RADIUS; j++) {
+                    if (i >= 0 && i < ROWS && j >= 0 && j < COLS) {
+                        methodState.histogram[imageData[i][j]]++;
+                        methodState.currentOps++;
+                    }
+                }
+            }
+
+            methodState.totalOps += methodState.currentOps;
+            methodState.pixelsDone++;
+
+            document.getElementById('method-status').textContent =
+                `Naive: Scanned all ${methodState.currentOps} pixels in window at (${centerRow}, ${centerCol})`;
+        }
+
+        function stepHuang() {
+            const { centerRow, centerCol, prevCol } = methodState;
+
+            if (prevCol === -1 || centerCol <= RADIUS) {
+                // First pixel: compute full histogram
+                methodState.histogram = new Array(L).fill(0);
+                methodState.currentOps = 0;
+
+                for (let i = centerRow - RADIUS; i <= centerRow + RADIUS; i++) {
+                    for (let j = centerCol - RADIUS; j <= centerCol + RADIUS; j++) {
+                        if (i >= 0 && i < ROWS && j >= 0 && j < COLS) {
+                            methodState.histogram[imageData[i][j]]++;
+                            methodState.currentOps++;
+                        }
+                    }
+                }
+                document.getElementById('method-status').textContent =
+                    `Huang: Initial full scan at (${centerRow}, ${centerCol}), ${methodState.currentOps} ops`;
+            } else {
+                // Incremental update
+                methodState.currentOps = 0;
+                const leftCol = prevCol - RADIUS;
+                const rightCol = centerCol + RADIUS;
+
+                // Remove left column
+                for (let i = centerRow - RADIUS; i <= centerRow + RADIUS; i++) {
+                    if (i >= 0 && i < ROWS && leftCol >= 0) {
+                        methodState.histogram[imageData[i][leftCol]]--;
+                        methodState.currentOps++;
+
+                        // Highlight cell
+                        const cell = document.getElementById(`mcell-${i}-${leftCol}`);
+                        if (cell) cell.classList.add('cell-remove');
+                    }
+                }
+
+                // Add right column
+                for (let i = centerRow - RADIUS; i <= centerRow + RADIUS; i++) {
+                    if (i >= 0 && i < ROWS && rightCol < COLS) {
+                        methodState.histogram[imageData[i][rightCol]]++;
+                        methodState.currentOps++;
+
+                        const cell = document.getElementById(`mcell-${i}-${rightCol}`);
+                        if (cell) cell.classList.add('cell-add');
+                    }
+                }
+
+                document.getElementById('method-status').textContent =
+                    `Huang: Removed col ${leftCol}, added col ${rightCol}. ${methodState.currentOps} ops (2×${2 * RADIUS + 1}=${2 * (2 * RADIUS + 1)})`;
+            }
+
+            methodState.totalOps += methodState.currentOps;
+            methodState.pixelsDone++;
+            methodState.prevCol = centerCol;
+        }
+
+        function stepPerreault() {
+            const { centerRow, centerCol, prevCol } = methodState;
+
+            // Clear previous remove/add markers
+            methodState.removingCol = null;
+            methodState.addingCol = null;
+
+            if (prevCol === -1 || centerCol <= RADIUS) {
+                // First pixel: compute full histogram
+                methodState.histogram = new Array(L).fill(0);
+                methodState.currentOps = 0;
+
+                for (let i = centerRow - RADIUS; i <= centerRow + RADIUS; i++) {
+                    for (let j = centerCol - RADIUS; j <= centerCol + RADIUS; j++) {
+                        if (i >= 0 && i < ROWS && j >= 0 && j < COLS) {
+                            methodState.histogram[imageData[i][j]]++;
+                        }
+                    }
+                }
+                methodState.currentOps = (2 * RADIUS + 1) * (2 * RADIUS + 1); // Still need to init
+                document.getElementById('method-status').textContent =
+                    `Perreault: Initial histogram at (${centerRow}, ${centerCol})`;
+            } else {
+                // Vector update: always 2L operations
+                methodState.currentOps = 2 * L;
+                const leftCol = prevCol - RADIUS;
+                const rightCol = centerCol + RADIUS;
+
+                // Mark columns for visual feedback
+                methodState.removingCol = leftCol;
+                methodState.addingCol = rightCol;
+
+                // Simulate vector subtraction (remove left column histogram)
+                for (let i = centerRow - RADIUS; i <= centerRow + RADIUS; i++) {
+                    if (i >= 0 && i < ROWS && leftCol >= 0) {
+                        methodState.histogram[imageData[i][leftCol]]--;
+                    }
+                }
+
+                // Simulate vector addition (add right column histogram)
+                for (let i = centerRow - RADIUS; i <= centerRow + RADIUS; i++) {
+                    if (i >= 0 && i < ROWS && rightCol < COLS) {
+                        methodState.histogram[imageData[i][rightCol]]++;
+                    }
+                }
+
+                document.getElementById('method-status').innerHTML =
+                    `Perreault: Vector ops H = H - h<sub>${leftCol}</sub> + h<sub>${rightCol}</sub>. <strong>Always ${2 * L} ops!</strong>`;
+                document.getElementById('method-status').classList.add('highlight');
+                setTimeout(() => document.getElementById('method-status').classList.remove('highlight'), 500);
+            }
+
+            methodState.totalOps += methodState.currentOps;
+            methodState.pixelsDone++;
+            methodState.prevCol = centerCol;
+        }
+
+        function advancePosition() {
+            methodState.centerCol++;
+            if (methodState.centerCol > COLS - 1 - RADIUS) {
+                methodState.centerCol = RADIUS;
+                methodState.centerRow++;
+                methodState.prevCol = -1; // Reset for new row
+
+                if (methodState.centerRow > ROWS - 1 - RADIUS) {
+                    methodState.completed = true;
+                    pauseMethodAnim();
+                    document.getElementById('method-status').innerHTML =
+                        `<strong>Done!</strong> Total: ${methodState.totalOps} operations for ${methodState.pixelsDone} pixels`;
+                    return;
+                }
+            }
+        }
+
+        function playMethodAnim() {
+            document.getElementById('btn-method-play').disabled = true;
+            document.getElementById('btn-method-pause').disabled = false;
+            document.getElementById('btn-method-step').disabled = true;
+
+            methodAnimInterval = setInterval(() => stepMethodAnim(), 600);
+        }
+
+        function pauseMethodAnim() {
+            clearInterval(methodAnimInterval);
+            document.getElementById('btn-method-play').disabled = false;
+            document.getElementById('btn-method-pause').disabled = true;
+            document.getElementById('btn-method-step').disabled = false;
+        }
+
+        function resetMethodAnim() {
+            pauseMethodAnim();
+            methodState = {
+                centerRow: RADIUS,
+                centerCol: RADIUS,
+                totalOps: 0,
+                currentOps: 0,
+                pixelsDone: 0,
+                phase: 'idle',
+                histogram: new Array(L).fill(0),
+                prevCol: -1,
+                completed: false,
+                removingCol: null,
+                addingCol: null
+            };
+            initMethodGrid();
+            updateMethodDisplay();
+            document.getElementById('method-status').textContent =
+                `Ready at position (${RADIUS}, ${RADIUS}). Click "Step" or "Play" to start.`;
+        }
+
+        // ============ COLUMN STRUCTURE VISUALIZATION ============
+        let colStructPos = 3;
+
+        function initColStruct() {
+            const container = document.getElementById('col-struct-container');
+            container.innerHTML = '';
+
+            for (let c = 0; c < COLS; c++) {
+                const stack = document.createElement('div');
+                stack.className = 'col-hist-stack';
+                stack.id = `col-stack-${c}`;
+
+                let html = `<div class="col-hist-header">h<sub>${c}</sub></div>`;
+
+                // Show simplified histogram (L bins)
+                for (let g = 0; g < L; g++) {
+                    const val = Math.floor(Math.random() * 3) + 1;
+                    html += `<div class="col-hist-cell col-outside" id="col-${c}-${g}">${val}</div>`;
+                }
+
+                stack.innerHTML = html;
+                container.appendChild(stack);
+            }
+
+            updateColStruct();
+        }
+
+        function updateColStruct(removing = -1, adding = -1) {
+            for (let c = 0; c < COLS; c++) {
+                const inWindow = c >= colStructPos - RADIUS && c <= colStructPos + RADIUS;
+
+                for (let g = 0; g < L; g++) {
+                    const cell = document.getElementById(`col-${c}-${g}`);
+                    cell.className = 'col-hist-cell';
+
+                    if (c === removing) {
+                        cell.classList.add('col-removing');
+                    } else if (c === adding) {
+                        cell.classList.add('col-adding');
+                    } else if (inWindow) {
+                        cell.classList.add('col-in-window');
+                    } else {
+                        cell.classList.add('col-outside');
+                    }
+                }
+            }
+
+            const left = colStructPos - RADIUS;
+            const right = colStructPos + RADIUS;
+            let statusText = `Window at j=${colStructPos}. Kernel H = `;
+            for (let c = left; c <= right; c++) {
+                statusText += `h<sub>${c}</sub>`;
+                if (c < right) statusText += ' + ';
+            }
+            document.getElementById('col-struct-status').innerHTML = statusText;
+        }
+
+        function slideColRight() {
+            const oldPos = colStructPos;
+            colStructPos++;
+
+            if (colStructPos > COLS - 1 - RADIUS) {
+                colStructPos = RADIUS;
+                updateColStruct();
+                return;
+            }
+
+            const removing = oldPos - RADIUS;
+            const adding = colStructPos + RADIUS;
+
+            updateColStruct(removing, adding);
+
+            document.getElementById('col-struct-status').innerHTML =
+                `Sliding: H = H − h<sub>${removing}</sub> + h<sub>${adding}</sub>`;
+        }
+
+        function resetColStruct() {
+            colStructPos = 3;
+            initColStruct();
+        }
+
+        // ============ VECTOR OPERATION ANIMATION ============
+        function initVectorDisplays() {
+            const bins = 8;
+            const containers = ['vec-h-old', 'vec-h-left', 'vec-h-right', 'vec-h-new'];
+            const colors = ['#805ad5', '#fc8181', '#68d391', '#fbd38d'];
+
+            containers.forEach((id, idx) => {
+                const container = document.getElementById(id);
+                container.innerHTML = '';
+
+                for (let i = 0; i < bins; i++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'vector-cell';
+                    cell.id = `${id}-${i}`;
+                    cell.style.background = colors[idx];
+                    cell.textContent = idx === 3 ? '?' : Math.floor(Math.random() * 5) + 1;
+                    container.appendChild(cell);
+                }
+            });
+        }
+
+        function playVectorAnim() {
+            // Get current values
+            const oldVals = [], leftVals = [], rightVals = [];
+            for (let i = 0; i < 8; i++) {
+                oldVals.push(parseInt(document.getElementById(`vec-h-old-${i}`).textContent) || 0);
+                leftVals.push(parseInt(document.getElementById(`vec-h-left-${i}`).textContent) || 0);
+                rightVals.push(parseInt(document.getElementById(`vec-h-right-${i}`).textContent) || 0);
+            }
+
+            // Animate subtraction
+            let step = 0;
+            const interval = setInterval(() => {
+                if (step < 8) {
+                    // Highlight current bin being processed
+                    document.getElementById(`vec-h-old-${step}`).style.transform = 'scale(1.2)';
+                    document.getElementById(`vec-h-left-${step}`).style.transform = 'scale(1.2)';
+                    document.getElementById(`vec-h-right-${step}`).style.transform = 'scale(1.2)';
+
+                    const newVal = oldVals[step] - leftVals[step] + rightVals[step];
+                    document.getElementById(`vec-h-new-${step}`).textContent = newVal;
+                    document.getElementById(`vec-h-new-${step}`).style.transform = 'scale(1.2)';
+
+                    setTimeout(() => {
+                        document.getElementById(`vec-h-old-${step}`).style.transform = 'scale(1)';
+                        document.getElementById(`vec-h-left-${step}`).style.transform = 'scale(1)';
+                        document.getElementById(`vec-h-right-${step}`).style.transform = 'scale(1)';
+                        document.getElementById(`vec-h-new-${step}`).style.transform = 'scale(1)';
+                    }, 150);
+
+                    step++;
+                } else {
+                    clearInterval(interval);
+                    document.getElementById('vector-status').innerHTML =
+                        '<strong style="color:#68d391;">Complete!</strong> All L bins updated in parallel (or with SIMD: ~32 instructions)';
+                }
+            }, 200);
+        }
+
+        function resetVectorAnim() {
+            initVectorDisplays();
+            document.getElementById('vector-status').innerHTML =
+                'Operations: <strong>L subtractions + L additions = 2L = 512 ops</strong> (constant!)';
+        }
+
+        // ============ SIMD ANIMATION ============
+        function initSIMD() {
+            const containers = ['simd-h', 'simd-add', 'simd-result'];
+
+            containers.forEach((id, idx) => {
+                const container = document.getElementById(id);
+                container.innerHTML = '';
+
+                for (let i = 0; i < 8; i++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'vector-cell';
+                    cell.id = `${id}-${i}`;
+                    cell.style.background = idx === 0 ? '#805ad5' : idx === 1 ? '#68d391' : '#fbd38d';
+                    cell.textContent = idx === 2 ? '?' : Math.floor(Math.random() * 10);
+                    container.appendChild(cell);
+                }
+            });
+        }
+
+        function animateSIMD() {
+            // Get values
+            const hVals = [], addVals = [];
+            for (let i = 0; i < 8; i++) {
+                hVals.push(parseInt(document.getElementById(`simd-h-${i}`).textContent) || 0);
+                addVals.push(parseInt(document.getElementById(`simd-add-${i}`).textContent) || 0);
+            }
+
+            // Flash all at once (SIMD style)
+            for (let i = 0; i < 8; i++) {
+                document.getElementById(`simd-h-${i}`).style.transform = 'scale(1.2)';
+                document.getElementById(`simd-add-${i}`).style.transform = 'scale(1.2)';
+            }
+
+            setTimeout(() => {
+                for (let i = 0; i < 8; i++) {
+                    document.getElementById(`simd-result-${i}`).textContent = hVals[i] + addVals[i];
+                    document.getElementById(`simd-result-${i}`).style.transform = 'scale(1.2)';
+                    document.getElementById(`simd-h-${i}`).style.transform = 'scale(1)';
+                    document.getElementById(`simd-add-${i}`).style.transform = 'scale(1)';
+                }
+
+                setTimeout(() => {
+                    for (let i = 0; i < 8; i++) {
+                        document.getElementById(`simd-result-${i}`).style.transform = 'scale(1)';
+                    }
+                }, 300);
+            }, 300);
+        }
+
+        // ============ INITIALIZATION ============
+        window.onload = function () {
+            initMethodGrid();
+            updateMethodDisplay();
+            // Set initial status to show starting position
+            document.getElementById('method-status').textContent =
+                `Ready at position (${RADIUS}, ${RADIUS}). Click "Step" or "Play" to start.`;
+            initColStruct();
+            initVectorDisplays();
+            initSIMD();
+        };
+    </script>
+    <script>
+        // ============ MERGED SCRIPT FROM SECTION 3.2 ============
+        // Alias constants to match existing ones
+        const GRID_ROWS = ROWS;
+        const GRID_COLS = COLS;
+        // reuse global RADIUS, L, imageData from above
+
+        // Current window position (File 3.2 vars)
+        let centerRow = 1;
+        let centerCol = 2;
+        let animInterval = null;
+        let opSubtract = 0;
+        let opAdd = 0;
+        let prevCenterCol = -1;
+
+        // Initialize the grid (Adapted to use existing container 'anim-grid' if present, or create conflicts?)
+        // Wait, the HTML I pasted contains id="anim-grid". 
+        // The original HTML (ahe_methods) contains id="method-grid" (line 529). 
+        // So the IDs are different. Safe.
+
+        function initGrid() {
+            const grid = document.getElementById('anim-grid');
+            if (!grid) return; // safety
+            grid.innerHTML = '';
+
+            for (let i = 0; i < GRID_ROWS; i++) {
+                for (let j = 0; j < GRID_COLS; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell cell-gray';
+                    cell.id = `cell-${i}-${j}`;
+                    // Use global imageData
+                    cell.innerHTML = `<span class="cell-label">${i},${j}</span>${imageData[i][j]}`;
+                    grid.appendChild(cell);
+                }
+            }
+
+            // Initialize column histogram visual
+            const colHistVisual = document.getElementById('col-hist-visual');
+            if (colHistVisual) {
+                colHistVisual.innerHTML = '';
+                for (let c = 0; c < GRID_COLS; c++) {
+                    const colDiv = document.createElement('div');
+                    colDiv.className = 'col-hist-bar';
+                    colDiv.innerHTML = `
+                        <div class="col-hist-box" id="col-hist-${c}" style="background:#805ad5;">h${c}</div>
+                        <div class="col-hist-label">c=${c}</div>
+                    `;
+                    colHistVisual.appendChild(colDiv);
+                }
+            }
+
+            // Initialize histogram
+            initHistogram();
+
+            updateGridDisplay();
+        }
+
+        function initHistogram() {
+            const histContainer = document.getElementById('kernel-histogram');
+            if (!histContainer) return;
+            histContainer.innerHTML = '';
+
+            for (let g = 0; g < L; g++) {
+                const bar = document.createElement('div');
+                bar.className = 'hist-bar';
+                bar.id = `hist-bar-${g}`;
+                bar.style.height = '0px';
+                bar.innerHTML = `<span class="hist-bar-label">${g}</span>`;
+                histContainer.appendChild(bar);
+            }
+        }
+
+        function updateGridDisplay() {
+            const removedCol = (prevCenterCol >= 0 && centerCol > prevCenterCol) ? prevCenterCol - RADIUS : -1;
+            const addedCol = (prevCenterCol >= 0 && centerCol > prevCenterCol) ? centerCol + RADIUS : -1;
+
+            // Update cells
+            for (let i = 0; i < GRID_ROWS; i++) {
+                for (let j = 0; j < GRID_COLS; j++) {
+                    const cell = document.getElementById(`cell-${i}-${j}`);
+                    if (!cell) continue;
+                    cell.className = 'cell';
+
+                    const inWindowRow = (i >= centerRow - RADIUS && i <= centerRow + RADIUS);
+                    const inWindowCol = (j >= centerCol - RADIUS && j <= centerCol + RADIUS);
+
+                    if (i === centerRow && j === centerCol) {
+                        cell.classList.add('cell-center');
+                    } else if (inWindowRow && j === removedCol) {
+                        cell.classList.add('cell-remove');
+                    } else if (inWindowRow && j === addedCol) {
+                        cell.classList.add('cell-add');
+                    } else if (inWindowRow && inWindowCol) {
+                        cell.classList.add('cell-window');
+                    } else {
+                        cell.classList.add('cell-gray');
+                    }
+                }
+            }
+
+            // Update column histogram visual
+            for (let c = 0; c < GRID_COLS; c++) {
+                const colHist = document.getElementById(`col-hist-${c}`);
+                if (!colHist) continue;
+                const inWindow = (c >= centerCol - RADIUS && c <= centerCol + RADIUS);
+
+                if (c === removedCol) {
+                    colHist.style.background = '#c53030';
+                } else if (c === addedCol) {
+                    colHist.style.background = '#38a169';
+                } else if (inWindow) {
+                    colHist.style.background = '#805ad5';
+                } else {
+                    colHist.style.background = '#a0aec0';
+                }
+            }
+
+            // Update histogram
+            updateHistogram();
+
+            // Update position display
+            const leftCol = centerCol - RADIUS;
+            const rightCol = centerCol + RADIUS;
+            const pd = document.getElementById('position-display');
+            if (pd) pd.innerHTML = `Center: (${centerRow}, ${centerCol}) | Window: cols [${leftCol}, ${rightCol}]`;
+
+            // Update window count
+            const windowSize = (2 * RADIUS + 1) * (2 * RADIUS + 1);
+            const wc = document.getElementById('window-count');
+            if (wc) wc.textContent = windowSize;
+        }
+
+        function updateHistogram() {
+            // Compute histogram for current window
+            const histogram = new Array(L).fill(0);
+
+            for (let i = centerRow - RADIUS; i <= centerRow + RADIUS; i++) {
+                for (let j = centerCol - RADIUS; j <= centerCol + RADIUS; j++) {
+                    if (i >= 0 && i < GRID_ROWS && j >= 0 && j < GRID_COLS) {
+                        histogram[imageData[i][j]]++;
+                    }
+                }
+            }
+
+            // Update histogram bars
+            const maxCount = Math.max(...histogram, 1);
+            for (let g = 0; g < L; g++) {
+                const bar = document.getElementById(`hist-bar-${g}`);
+                if (bar) {
+                    const height = (histogram[g] / maxCount) * 100;
+                    bar.style.height = `${height}px`;
+                }
+            }
+        }
+
+        function stepAnimation() {
+            prevCenterCol = centerCol;
+
+            // Move right
+            centerCol++;
+
+            // If reached end of row, go to next row
+            if (centerCol > GRID_COLS - 1 - RADIUS) {
+                centerCol = RADIUS;
+                centerRow++;
+                prevCenterCol = -1; // Reset, no horizontal slide animation
+
+                // If reached end of grid, reset
+                if (centerRow > GRID_ROWS - 1 - RADIUS) {
+                    centerRow = RADIUS;
+                    opSubtract = 0;
+                    opAdd = 0;
+                }
+            } else {
+                // Count operations for horizontal slide
+                opSubtract += L;
+                opAdd += L;
+            }
+
+            updateGridDisplay();
+            updateOpCounter();
+        }
+
+        function updateOpCounter() {
+            const os = document.getElementById('op-subtract');
+            const oa = document.getElementById('op-add');
+            const ot = document.getElementById('op-total');
+            if (os) os.textContent = opSubtract;
+            if (oa) oa.textContent = opAdd;
+            if (ot) ot.textContent = opSubtract + opAdd;
+        }
+
+        function playAnimation() {
+            const btnPlay = document.getElementById('btn-play');
+            const btnPause = document.getElementById('btn-pause');
+            const btnStep = document.getElementById('btn-step');
+            if (btnPlay) btnPlay.disabled = true;
+            if (btnPause) btnPause.disabled = false;
+            if (btnStep) btnStep.disabled = true;
+
+            animInterval = setInterval(() => {
+                stepAnimation();
+            }, 800);
+        }
+
+        function pauseAnimation() {
+            clearInterval(animInterval);
+            const btnPlay = document.getElementById('btn-play');
+            const btnPause = document.getElementById('btn-pause');
+            const btnStep = document.getElementById('btn-step');
+            if (btnPlay) btnPlay.disabled = false;
+            if (btnPause) btnPause.disabled = true;
+            if (btnStep) btnStep.disabled = false;
+        }
+
+        function resetAnimation() {
+            pauseAnimation();
+            centerRow = RADIUS;
+            centerCol = RADIUS;
+            prevCenterCol = -1;
+            opSubtract = 0;
+            opAdd = 0;
+            updateGridDisplay();
+            updateOpCounter();
+        }
+
+        // ============ COMPLEXITY RACE ============
+        let raceInterval = null;
+
+        const slider = document.getElementById('radius-slider');
+        if (slider) {
+            slider.addEventListener('input', function () {
+                const rv = document.getElementById('radius-value');
+                if (rv) rv.textContent = this.value;
+                updateFormulas();
+            });
+        }
+
+        function updateFormulas() {
+            const slider = document.getElementById('radius-slider');
+            if (!slider) return;
+            const r = parseInt(slider.value);
+            const naive = Math.pow(2 * r + 1, 2);
+            const huang = 2 * (2 * r + 1);
+            const perreault = 514;
+
+            const nf = document.getElementById('naive-formula');
+            const hf = document.getElementById('huang-formula');
+            const pf = document.getElementById('perreault-formula');
+
+            if (nf) nf.textContent = `(2r+1)² = ${naive}`;
+            if (hf) hf.textContent = `2(2r+1) = ${huang}`;
+            if (pf) pf.textContent = `2L + 2 = ${perreault}`;
+        }
+
+        function startRace() {
+            const slider = document.getElementById('radius-slider');
+            if (!slider) return;
+            const r = parseInt(slider.value);
+            const naiveTarget = Math.pow(2 * r + 1, 2);
+            const huangTarget = 2 * (2 * r + 1);
+            const perreaultTarget = 514;
+
+            const maxOps = naiveTarget;
+
+            let naiveOps = 0;
+            let huangOps = 0;
+            let perreaultOps = 0;
+
+            // Reset bars
+            const nb = document.getElementById('naive-bar');
+            const hb = document.getElementById('huang-bar');
+            const pb = document.getElementById('perreault-bar');
+            if (nb) nb.style.width = '0%';
+            if (hb) hb.style.width = '0%';
+            if (pb) pb.style.width = '0%';
+
+            const no = document.getElementById('naive-ops');
+            const ho = document.getElementById('huang-ops');
+            const po = document.getElementById('perreault-ops');
+            if (no) no.textContent = '0';
+            if (ho) ho.textContent = '0';
+            if (po) po.textContent = '0';
+
+            const rr = document.getElementById('race-result');
+            if (rr) rr.style.display = 'none';
+
+            // Speed: complete in ~3 seconds
+            const steps = 60;
+            const naiveStep = naiveTarget / steps;
+            const huangStep = huangTarget / steps;
+            const perreaultStep = perreaultTarget / steps;
+
+            let step = 0;
+
+            if (raceInterval) clearInterval(raceInterval);
+
+            raceInterval = setInterval(() => {
+                step++;
+
+                naiveOps = Math.min(naiveTarget, Math.round(naiveStep * step));
+                huangOps = Math.min(huangTarget, Math.round(huangStep * step));
+                perreaultOps = Math.min(perreaultTarget, Math.round(perreaultStep * step));
+
+                if (no) no.textContent = naiveOps;
+                if (ho) ho.textContent = huangOps;
+                if (po) po.textContent = perreaultOps;
+
+                if (nb) nb.style.width = `${(naiveOps / maxOps) * 100}%`;
+                if (hb) hb.style.width = `${(huangOps / maxOps) * 100}%`;
+                if (pb) pb.style.width = `${(perreaultOps / maxOps) * 100}%`;
+
+                if (step >= steps) {
+                    clearInterval(raceInterval);
+                    showRaceResult(r, naiveTarget, huangTarget, perreaultTarget);
+                }
+            }, 50);
+        }
+
+        function showRaceResult(r, naive, huang, perreault) {
+            const resultDiv = document.getElementById('race-result');
+            const winnerSpan = document.getElementById('race-winner');
+            if (!resultDiv || !winnerSpan) return;
+
+            let winner, speedup;
+            if (perreault < huang) {
+                winner = 'Perreault O(1)';
+                speedup = (huang / perreault).toFixed(1);
+                winnerSpan.innerHTML = `<span class="complexity">O(1) wins!</span> At r=${r}, Perreault is <strong>${speedup}×</strong> faster than Huang (${perreault} vs ${huang} ops).`;
+            } else {
+                winner = 'Huang O(r)';
+                speedup = (perreault / huang).toFixed(1);
+                winnerSpan.innerHTML = `<span class="complexity mid">O(r) wins at small r.</span> At r=${r}, Huang is <strong>${speedup}×</strong> faster (${huang} vs ${perreault} ops). Try r > 128.`;
+            }
+
+            resultDiv.style.display = 'block';
+        }
+
+        // ============ DERIVATION ANIMATION ============
+        let derivStep = 0;
+
+        function animateDerivation() {
+            derivStep = 0;
+            resetDerivation();
+
+            const steps = ['deriv-step-1', 'deriv-step-2', 'deriv-step-3', 'deriv-step-4'];
+
+            function showNext() {
+                if (derivStep < steps.length) {
+                    const el = document.getElementById(steps[derivStep]);
+                    if (el) {
+                        el.style.opacity = '1';
+                        el.style.transform = 'translateX(0)';
+                    }
+                    derivStep++;
+                    setTimeout(showNext, 1000);
+                }
+            }
+
+            showNext();
+        }
+
+        function resetDerivation() {
+            const steps = ['deriv-step-1', 'deriv-step-2', 'deriv-step-3', 'deriv-step-4'];
+            steps.forEach((id, idx) => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.style.opacity = idx === 0 ? '1' : '0.4';
+                    el.style.transition = 'all 0.5s ease';
+                }
+            });
+        }
+
+        // ============ STEP 1 VISUAL ============
+        function initStep1Visual() {
+            const container = document.getElementById('step1-visual');
+            if (!container) return;
+            container.innerHTML = '';
+
+            for (let c = 0; c < 7; c++) {
+                const colDiv = document.createElement('div');
+                colDiv.className = 'col-hist-bar';
+                colDiv.innerHTML = `
+                    <div class="col-hist-box" style="background:#805ad5; height:35px; width:50px;">$h_${c}$</div>
+                    <div class="col-hist-label" style="font-size:0.75em;">L bins</div>
+                `;
+                container.appendChild(colDiv);
+            }
+            if (window.MathJax) MathJax.typesetPromise([container]);
+        }
+
+        // CHAINING ONLOAD
+        const oldOnLoad = window.onload;
+        window.onload = function () {
+            if (oldOnLoad) oldOnLoad();
+            try {
+                initGrid();
+                updateFormulas();
+                initStep1Visual();
+            } catch (e) { console.error("Error in section 3.2 init:", e); }
+        };
+    </script>
+
+</html>

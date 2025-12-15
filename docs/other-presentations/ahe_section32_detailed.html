@@ -1,0 +1,1171 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>AHE O(1) - Section 3.2 Detailed</title>
+        <!-- MathJax for LaTeX -->
+        <script>
+            MathJax = {
+                tex: {
+                    inlineMath: [
+                        ["$", "$"],
+                        ["\\(", "\\)"],
+                    ],
+                    displayMath: [
+                        ["$$", "$$"],
+                        ["\\[", "\\]"],
+                    ],
+                },
+                svg: {
+                    fontCache: "global",
+                },
+            };
+        </script>
+        <script
+            src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
+            async
+        ></script>
+
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+            body {
+                font-family: "Segoe UI", sans-serif;
+                line-height: 1.8;
+                color: #1a202c;
+                background: #f7fafc;
+                padding: 20px;
+            }
+            .container {
+                max-width: 1000px;
+                margin: 0 auto;
+            }
+
+            h1 {
+                font-size: 1.8em;
+                color: #2d3748;
+                margin-bottom: 5px;
+            }
+            h2 {
+                font-size: 1.4em;
+                color: #553c9a;
+                margin: 35px 0 20px 0;
+                padding: 12px 18px;
+                background: linear-gradient(90deg, #e9d8fd, transparent);
+                border-left: 4px solid #805ad5;
+            }
+            h3 {
+                font-size: 1.15em;
+                color: #2d3748;
+                margin: 25px 0 12px 0;
+            }
+            h4 {
+                font-size: 1.05em;
+                color: #4a5568;
+                margin: 20px 0 10px 0;
+            }
+
+            p {
+                margin-bottom: 14px;
+            }
+
+            .section {
+                background: white;
+                padding: 30px;
+                margin-bottom: 25px;
+                border-radius: 12px;
+                box-shadow: 0 2px 15px rgba(0, 0, 0, 0.06);
+            }
+
+            .subtitle {
+                color: #718096;
+                margin-bottom: 25px;
+            }
+
+            .eq-box {
+                background: #1a202c;
+                color: #e2e8f0;
+                padding: 18px 22px;
+                border-radius: 8px;
+                margin: 18px 0;
+                overflow-x: auto;
+            }
+            .eq-box .eq-label {
+                color: #68d391;
+                font-size: 0.9em;
+                margin-bottom: 10px;
+                font-weight: bold;
+            }
+            .eq-box .comment {
+                color: #718096;
+                font-style: italic;
+            }
+
+            .key-point {
+                background: #ebf8ff;
+                border-left: 4px solid #3182ce;
+                padding: 15px 18px;
+                margin: 18px 0;
+                border-radius: 0 8px 8px 0;
+            }
+            .key-point.success {
+                background: #c6f6d5;
+                border-color: #38a169;
+            }
+            .key-point.warning {
+                background: #fefcbf;
+                border-color: #d69e2e;
+            }
+
+            .complexity {
+                display: inline-block;
+                background: #48bb78;
+                color: white;
+                padding: 4px 12px;
+                border-radius: 15px;
+                font-weight: bold;
+                font-size: 0.9em;
+            }
+            .complexity.bad {
+                background: #f56565;
+            }
+            .complexity.mid {
+                background: #ed8936;
+            }
+
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                margin: 18px 0;
+                font-size: 0.95em;
+            }
+            th,
+            td {
+                padding: 12px 14px;
+                border: 1px solid #e2e8f0;
+                text-align: center;
+            }
+            th {
+                background: #805ad5;
+                color: white;
+            }
+            tr:nth-child(even) {
+                background: #f7fafc;
+            }
+            .highlight-row {
+                background: #c6f6d5 !important;
+            }
+
+            /* Grid Visualization */
+            .visual-container {
+                background: #f7fafc;
+                border-radius: 12px;
+                padding: 25px;
+                margin: 25px 0;
+            }
+
+            .grid-wrapper {
+                display: flex;
+                gap: 40px;
+                align-items: flex-start;
+                justify-content: center;
+                flex-wrap: wrap;
+                margin: 20px 0;
+            }
+
+            .grid-panel {
+                text-align: center;
+            }
+            .grid-panel-title {
+                font-weight: bold;
+                margin-bottom: 12px;
+                color: #2d3748;
+            }
+
+            .mini-grid {
+                display: grid;
+                gap: 3px;
+                background: #2d3748;
+                padding: 3px;
+                border-radius: 6px;
+            }
+            .cell {
+                width: 48px;
+                height: 48px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 0.8em;
+                font-weight: bold;
+                border-radius: 4px;
+                position: relative;
+            }
+            .cell-label {
+                position: absolute;
+                top: 2px;
+                left: 4px;
+                font-size: 0.6em;
+                opacity: 0.7;
+            }
+
+            .cell-gray {
+                background: #a0aec0;
+                color: #2d3748;
+            }
+            .cell-window {
+                background: #9ae6b4;
+                color: #1a202c;
+            }
+            .cell-center {
+                background: #38a169;
+                color: white;
+            }
+            .cell-remove {
+                background: #fc8181;
+                color: #1a202c;
+                box-shadow: inset 0 0 0 3px #c53030;
+            }
+            .cell-add {
+                background: #68d391;
+                color: #1a202c;
+                box-shadow: inset 0 0 0 3px #276749;
+            }
+
+            .arrow-between {
+                font-size: 2.5em;
+                color: #805ad5;
+                display: flex;
+                align-items: center;
+            }
+
+            .col-labels {
+                display: grid;
+                gap: 3px;
+                margin-top: 8px;
+            }
+            .col-label {
+                width: 48px;
+                text-align: center;
+                font-size: 0.75em;
+                color: #718096;
+            }
+
+            .legend {
+                display: flex;
+                gap: 20px;
+                justify-content: center;
+                margin-top: 20px;
+                flex-wrap: wrap;
+            }
+            .legend-item {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-size: 0.85em;
+            }
+            .legend-color {
+                width: 20px;
+                height: 20px;
+                border-radius: 4px;
+            }
+
+            /* Step boxes */
+            .step-container {
+                margin: 25px 0;
+            }
+            .step-box {
+                background: white;
+                border: 2px solid #e2e8f0;
+                border-radius: 10px;
+                padding: 20px;
+                margin-bottom: 15px;
+                position: relative;
+            }
+            .step-box.highlight {
+                border-color: #805ad5;
+                background: #faf5ff;
+            }
+            .step-number {
+                position: absolute;
+                top: -12px;
+                left: 20px;
+                background: #805ad5;
+                color: white;
+                padding: 4px 14px;
+                border-radius: 15px;
+                font-weight: bold;
+                font-size: 0.85em;
+            }
+            .step-title {
+                font-weight: bold;
+                color: #2d3748;
+                margin-bottom: 10px;
+                margin-top: 5px;
+            }
+
+            /* Comparison table */
+            .compare-table {
+                margin: 25px 0;
+            }
+            .compare-table td {
+                text-align: left;
+                vertical-align: top;
+            }
+            .compare-table .method-name {
+                font-weight: bold;
+                white-space: nowrap;
+            }
+
+            /* Code-like boxes */
+            .pseudo-code {
+                background: #2d3748;
+                color: #e2e8f0;
+                padding: 18px;
+                border-radius: 8px;
+                font-family: "Courier New", monospace;
+                font-size: 0.9em;
+                margin: 15px 0;
+                overflow-x: auto;
+            }
+            .pseudo-code .keyword {
+                color: #f687b3;
+            }
+            .pseudo-code .func {
+                color: #68d391;
+            }
+            .pseudo-code .comment {
+                color: #718096;
+            }
+            .pseudo-code .highlight-line {
+                background: rgba(104, 211, 145, 0.2);
+                display: block;
+                margin: 0 -18px;
+                padding: 0 18px;
+            }
+
+            /* Math display override */
+            .math-display {
+                overflow-x: auto;
+                padding: 10px 0;
+            }
+
+            ul,
+            ol {
+                margin-left: 25px;
+                margin-bottom: 14px;
+            }
+            li {
+                margin-bottom: 6px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <!-- Header -->
+            <div class="section">
+                <h1>§3.2 Sliding-Window Histogram Computation</h1>
+                <p class="subtitle">
+                    The Core Technique Behind O(1) AHE — Detailed Breakdown
+                </p>
+
+                <div class="key-point">
+                    <strong>Goal:</strong> Compute histogram $H_{i,j}$ for every
+                    pixel $(i,j)$ efficiently. This dominates AHE runtime.
+                </div>
+            </div>
+
+            <!-- Notation Recap -->
+            <div class="section">
+                <h2>Notation Recap</h2>
+
+                <div class="eq-box">
+                    <div class="eq-label">Setup</div>
+                    <div class="math-display">
+                        $$\begin{aligned} &\text{Image: } \mathcal{I} \in \{0,
+                        \ldots, 255\}^{M \times N} \\ &\text{Filter radius: } r
+                        \in \mathbb{N} \quad \Rightarrow \quad \text{Window
+                        size: } (2r+1) \times (2r+1) \\ &\text{Histogram bins: }
+                        L = 256 \text{ (for 8-bit images)} \\ &\text{Window
+                        pixel count: } n = (2r+1)^2 \end{aligned}$$
+                    </div>
+                </div>
+
+                <div class="eq-box">
+                    <div class="eq-label">Equation (1): Kernel Histogram</div>
+                    <div class="math-display">
+                        $$H_{i,j}(g) = \sum_{x=i-r}^{i+r} \sum_{y=j-r}^{j+r}
+                        \left[ \mathcal{I}_{x,y} = g \right]$$
+                    </div>
+                    <p class="comment">
+                        Count of pixels with gray value $g$ in window centered
+                        at $(i,j)$
+                    </p>
+                </div>
+            </div>
+
+            <!-- Method Comparison -->
+            <div class="section">
+                <h2>Evolution of Sliding-Window Methods</h2>
+
+                <h3>Method 1: Naive Approach</h3>
+                <div class="step-box">
+                    <div class="step-number">
+                        <span class="complexity bad">O(r²)</span>
+                    </div>
+                    <div class="step-title">
+                        Recompute Full Histogram Per Pixel
+                    </div>
+
+                    <p><strong>Algorithm:</strong></p>
+                    <div class="pseudo-code">
+                        <span class="keyword">for each</span> pixel (i, j):<br />
+                        &nbsp;&nbsp;H[0..L-1] &larr; 0
+                        <span class="comment">// Reset histogram</span><br />
+                        &nbsp;&nbsp;<span class="keyword">for</span> x = i-r
+                        <span class="keyword">to</span> i+r:
+                        <span class="comment">// Loop over window rows</span
+                        ><br />
+                        &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">for</span>
+                        y = j-r <span class="keyword">to</span> j+r:
+                        <span class="comment">// Loop over window cols</span
+                        ><br />
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;g &larr; I[x, y]<br />
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;H[g] &larr; H[g] + 1
+                        <span class="comment">// Increment bin</span><br />
+                        &nbsp;&nbsp;<span class="func">compute_transfer</span
+                        >(H)
+                    </div>
+
+                    <p><strong>Complexity Analysis:</strong></p>
+                    <div class="math-display">
+                        $$\text{Per pixel: } (2r+1)^2 \text{ bin increments} =
+                        O(r^2)$$
+                    </div>
+                    <div class="math-display">
+                        $$\text{Total: } O(M \cdot N \cdot r^2)$$
+                    </div>
+
+                    <div class="key-point warning">
+                        <strong>Example:</strong> For $r=100$: $(2 \cdot 100 +
+                        1)^2 = 40{,}401$ operations per pixel!
+                    </div>
+                </div>
+
+                <h3>Method 2: Huang's Algorithm (1979)</h3>
+                <div class="step-box">
+                    <div class="step-number">
+                        <span class="complexity mid">O(r)</span>
+                    </div>
+                    <div class="step-title">Incremental Column Update</div>
+
+                    <p>
+                        <strong>Key Insight:</strong> When sliding right, only 1
+                        column leaves and 1 column enters.
+                    </p>
+
+                    <div class="pseudo-code">
+                        <span class="comment"
+                            >// Initialize first window of each row</span
+                        ><br />
+                        H &larr;
+                        <span class="func">compute_full_histogram</span>(window
+                        at (i, 0)) <span class="comment">// O(r²)</span><br />
+                        <br />
+                        <span class="keyword">for</span> j = 1
+                        <span class="keyword">to</span> N-1:<br />
+                        <span class="keyword">
+                            &nbsp;&nbsp;<span class="keyword">for</span> x = i-r
+                            <span class="keyword">to</span> i+r:
+                            <span class="comment"
+                                >// Remove left column</span
+                            ></span
+                        ><br />
+                        <span class="keyword">
+                            &nbsp;&nbsp;&nbsp;&nbsp;H[I[x, j-r-1]] &larr; H[I[x,
+                            j-r-1]] - 1</span
+                        ><br />
+                        <span class="keyword">
+                            &nbsp;&nbsp;<span class="keyword">for</span> x = i-r
+                            <span class="keyword">to</span> i+r:
+                            <span class="comment"
+                                >// Add right column</span
+                            ></span
+                        ><br />
+                        <span class="keyword">
+                            &nbsp;&nbsp;&nbsp;&nbsp;H[I[x, j+r]] &larr; H[I[x,
+                            j+r]] + 1</span
+                        ><br />
+                        &nbsp;&nbsp;<span class="func">compute_transfer</span
+                        >(H)
+                    </div>
+
+                    <p><strong>Complexity Analysis:</strong></p>
+                    <div class="math-display">
+                        $$\text{Per pixel update: } 2 \times (2r+1) = O(r)
+                        \text{ operations}$$
+                    </div>
+                    <div class="math-display">
+                        $$\text{Row initialization: } O(r^2) \text{ (amortized
+                        over } N \text{ pixels)}$$
+                    </div>
+
+                    <p>
+                        <strong>Problem:</strong> Each pixel still requires
+                        $2(2r+1)$ individual bin updates. At $r=300$: 1202
+                        operations per pixel.
+                    </p>
+                </div>
+
+                <h3>Method 3: Perreault-Hébert (2007) — Used in This Paper</h3>
+                <div class="step-box highlight">
+                    <div class="step-number">
+                        <span class="complexity">O(1)</span>
+                    </div>
+                    <div class="step-title">
+                        Column Histograms + Vector Operations
+                    </div>
+
+                    <p>
+                        <strong>Revolutionary Insight:</strong> Maintain a
+                        histogram for each <em>column</em>. The kernel histogram
+                        is the <em>sum</em> of column histograms.
+                    </p>
+
+                    <div class="eq-box">
+                        <div class="eq-label">
+                            Equation (3): Column Histogram
+                        </div>
+                        <div class="math-display">
+                            $$h_c(g) = \sum_{x=i-r}^{i+r} \left[
+                            \mathcal{I}_{x,c} = g \right]$$
+                        </div>
+                        <p class="comment">
+                            Histogram of column $c$, spanning rows $[i-r, i+r]$
+                        </p>
+                    </div>
+
+                    <div class="eq-box">
+                        <div class="eq-label">
+                            Equation (4): Kernel = Sum of Column Histograms
+                        </div>
+                        <div class="math-display">
+                            $$H_{i,j}(g) = \sum_{c=j-r}^{j+r} h_c(g)$$
+                        </div>
+                        <p class="comment">
+                            Kernel histogram = sum of $(2r+1)$ column histograms
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detailed O(1) Derivation -->
+            <div class="section">
+                <h2>Why It's O(1): Step-by-Step Derivation</h2>
+
+                <div class="step-container">
+                    <div class="step-box">
+                        <div class="step-number">Step 1</div>
+                        <div class="step-title">
+                            Data Structure: Maintain $N$ Column Histograms
+                        </div>
+
+                        <p>For an image with $N$ columns, we maintain:</p>
+                        <div class="math-display">
+                            $$h_0, h_1, h_2, \ldots, h_{N-1} \quad \text{where
+                            each } h_c \in \mathbb{N}^L$$
+                        </div>
+
+                        <p>
+                            Each $h_c$ contains $L = 256$ bins, storing the gray
+                            value distribution of column $c$ within the current
+                            row's vertical span $[i-r, i+r]$.
+                        </p>
+
+                        <p>
+                            <strong>Memory:</strong> $N \times L$ integers
+                            (e.g., $1000 \times 256 = 256\text{KB}$)
+                        </p>
+                    </div>
+
+                    <div class="step-box">
+                        <div class="step-number">Step 2</div>
+                        <div class="step-title">
+                            Horizontal Slide: Update Kernel Histogram
+                        </div>
+
+                        <p>
+                            When the window moves from $(i, j)$ to $(i, j+1)$:
+                        </p>
+
+                        <div class="eq-box">
+                            <div class="eq-label">Update Rule</div>
+                            <div class="math-display">
+                                $$H_{i,j+1} = H_{i,j} - h_{j-r} + h_{j+r+1}$$
+                            </div>
+                        </div>
+
+                        <p><strong>Operation breakdown:</strong></p>
+                        <ul>
+                            <li>
+                                Subtract entire column histogram $h_{j-r}$ (the
+                                leftmost column exiting the window)
+                            </li>
+                            <li>
+                                Add entire column histogram $h_{j+r+1}$ (the new
+                                rightmost column entering)
+                            </li>
+                        </ul>
+
+                        <p><strong>Cost:</strong></p>
+                        <div class="math-display">
+                            $$\underbrace{L \text{ subtractions}}_{\text{remove
+                            } h_{j-r}} + \underbrace{L \text{
+                            additions}}_{\text{add } h_{j+r+1}} = 2L = 512
+                            \text{ operations}$$
+                        </div>
+
+                        <div class="key-point success">
+                            <strong>Key:</strong> $2L$ is a <em>constant</em> —
+                            independent of $r$! This is
+                            <span class="complexity">O(1)</span> with respect to
+                            filter radius.
+                        </div>
+                    </div>
+
+                    <div class="step-box">
+                        <div class="step-number">Step 3</div>
+                        <div class="step-title">
+                            Vertical Move: Update All Column Histograms
+                        </div>
+
+                        <p>
+                            When moving to the next row (from row $i$ to row
+                            $i+1$):
+                        </p>
+
+                        <div class="eq-box">
+                            <div class="eq-label">
+                                Column Histogram Update (for each column $c$)
+                            </div>
+                            <div class="math-display">
+                                $$h_c^{\text{new}}(g) = h_c^{\text{old}}(g) -
+                                \left[\mathcal{I}_{i-r, c} = g\right] +
+                                \left[\mathcal{I}_{i+r+1, c} = g\right]$$
+                            </div>
+                        </div>
+
+                        <p><strong>Operation breakdown:</strong></p>
+                        <ul>
+                            <li>
+                                For each of $N$ columns: remove top pixel, add
+                                bottom pixel
+                            </li>
+                            <li>Cost per column: 2 bin updates</li>
+                            <li>Total: $2N$ operations for the entire row</li>
+                        </ul>
+
+                        <p><strong>Amortized cost per pixel:</strong></p>
+                        <div class="math-display">
+                            $$\frac{2N \text{ (row update)}}{N \text{ (pixels
+                            per row)}} = 2 \text{ operations per pixel}$$
+                        </div>
+                    </div>
+
+                    <div class="step-box">
+                        <div class="step-number">Step 4</div>
+                        <div class="step-title">Total Per-Pixel Complexity</div>
+
+                        <div class="eq-box">
+                            <div class="eq-label">Final Complexity</div>
+                            <div class="math-display">
+                                $$\underbrace{2L}_{\text{kernel update}} +
+                                \underbrace{2}_{\text{column update
+                                (amortized)}} = 2L + 2 = O(L) = O(1) \text{
+                                w.r.t. } r$$
+                            </div>
+                        </div>
+
+                        <p>
+                            For $L = 256$: approximately
+                            <strong>514 operations per pixel</strong>,
+                            regardless of whether $r = 10$ or $r = 1000$.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Corrected Visual -->
+            <div class="section">
+                <h2>Visual: Horizontal Slide (Corrected)</h2>
+
+                <p>
+                    Consider a window with radius $r = 1$ (3×3 window) sliding
+                    from center $(1, 3)$ to $(1, 4)$:
+                </p>
+
+                <div class="visual-container">
+                    <div class="grid-wrapper">
+                        <!-- Before Panel -->
+                        <div class="grid-panel">
+                            <div class="grid-panel-title">
+                                Before: Center at $(1, 3)$
+                            </div>
+                            <div
+                                class="mini-grid"
+                                style="grid-template-columns: repeat(7, 48px)"
+                            >
+                                <!-- Row 0 -->
+                                <div class="cell cell-gray">
+                                    <span class="cell-label">0,0</span>50
+                                </div>
+                                <div class="cell cell-gray">
+                                    <span class="cell-label">0,1</span>60
+                                </div>
+                                <div class="cell cell-remove">
+                                    <span class="cell-label">0,2</span>−
+                                </div>
+                                <div class="cell cell-window">
+                                    <span class="cell-label">0,3</span>90
+                                </div>
+                                <div class="cell cell-window">
+                                    <span class="cell-label">0,4</span>100
+                                </div>
+                                <div class="cell cell-gray">
+                                    <span class="cell-label">0,5</span>110
+                                </div>
+                                <div class="cell cell-gray">
+                                    <span class="cell-label">0,6</span>120
+                                </div>
+                                <!-- Row 1 -->
+                                <div class="cell cell-gray">
+                                    <span class="cell-label">1,0</span>55
+                                </div>
+                                <div class="cell cell-gray">
+                                    <span class="cell-label">1,1</span>65
+                                </div>
+                                <div class="cell cell-remove">
+                                    <span class="cell-label">1,2</span>−
+                                </div>
+                                <div class="cell cell-center">
+                                    <span class="cell-label">1,3</span>●
+                                </div>
+                                <div class="cell cell-window">
+                                    <span class="cell-label">1,4</span>105
+                                </div>
+                                <div class="cell cell-gray">
+                                    <span class="cell-label">1,5</span>115
+                                </div>
+                                <div class="cell cell-gray">
+                                    <span class="cell-label">1,6</span>125
+                                </div>
+                                <!-- Row 2 -->
+                                <div class="cell cell-gray">
+                                    <span class="cell-label">2,0</span>52
+                                </div>
+                                <div class="cell cell-gray">
+                                    <span class="cell-label">2,1</span>62
+                                </div>
+                                <div class="cell cell-remove">
+                                    <span class="cell-label">2,2</span>−
+                                </div>
+                                <div class="cell cell-window">
+                                    <span class="cell-label">2,3</span>92
+                                </div>
+                                <div class="cell cell-window">
+                                    <span class="cell-label">2,4</span>102
+                                </div>
+                                <div class="cell cell-gray">
+                                    <span class="cell-label">2,5</span>112
+                                </div>
+                                <div class="cell cell-gray">
+                                    <span class="cell-label">2,6</span>122
+                                </div>
+                            </div>
+                            <div
+                                class="col-labels"
+                                style="grid-template-columns: repeat(7, 48px)"
+                            >
+                                <div class="col-label">c=0</div>
+                                <div class="col-label">c=1</div>
+                                <div
+                                    class="col-label"
+                                    style="color: #c53030; font-weight: bold"
+                                >
+                                    c=2
+                                </div>
+                                <div class="col-label">c=3</div>
+                                <div class="col-label">c=4</div>
+                                <div class="col-label">c=5</div>
+                                <div class="col-label">c=6</div>
+                            </div>
+                            <p
+                                style="
+                                    margin-top: 10px;
+                                    font-size: 0.85em;
+                                    color: #718096;
+                                "
+                            >
+                                Window: columns $[j-r, j+r] = [3-1, 3+1] = [2,
+                                4]$
+                            </p>
+                        </div>
+
+                        <!-- Arrow -->
+                        <div class="arrow-between">→</div>
+
+                        <!-- After Panel -->
+                        <div class="grid-panel">
+                            <div class="grid-panel-title">
+                                After: Center at $(1, 4)$
+                            </div>
+                            <div
+                                class="mini-grid"
+                                style="grid-template-columns: repeat(7, 48px)"
+                            >
+                                <!-- Row 0 -->
+                                <div class="cell cell-gray">
+                                    <span class="cell-label">0,0</span>50
+                                </div>
+                                <div class="cell cell-gray">
+                                    <span class="cell-label">0,1</span>60
+                                </div>
+                                <div class="cell cell-gray">
+                                    <span class="cell-label">0,2</span>70
+                                </div>
+                                <div class="cell cell-window">
+                                    <span class="cell-label">0,3</span>90
+                                </div>
+                                <div class="cell cell-window">
+                                    <span class="cell-label">0,4</span>100
+                                </div>
+                                <div class="cell cell-add">
+                                    <span class="cell-label">0,5</span>+
+                                </div>
+                                <div class="cell cell-gray">
+                                    <span class="cell-label">0,6</span>120
+                                </div>
+                                <!-- Row 1 -->
+                                <div class="cell cell-gray">
+                                    <span class="cell-label">1,0</span>55
+                                </div>
+                                <div class="cell cell-gray">
+                                    <span class="cell-label">1,1</span>65
+                                </div>
+                                <div class="cell cell-gray">
+                                    <span class="cell-label">1,2</span>75
+                                </div>
+                                <div class="cell cell-window">
+                                    <span class="cell-label">1,3</span>95
+                                </div>
+                                <div class="cell cell-center">
+                                    <span class="cell-label">1,4</span>●
+                                </div>
+                                <div class="cell cell-add">
+                                    <span class="cell-label">1,5</span>+
+                                </div>
+                                <div class="cell cell-gray">
+                                    <span class="cell-label">1,6</span>125
+                                </div>
+                                <!-- Row 2 -->
+                                <div class="cell cell-gray">
+                                    <span class="cell-label">2,0</span>52
+                                </div>
+                                <div class="cell cell-gray">
+                                    <span class="cell-label">2,1</span>62
+                                </div>
+                                <div class="cell cell-gray">
+                                    <span class="cell-label">2,2</span>72
+                                </div>
+                                <div class="cell cell-window">
+                                    <span class="cell-label">2,3</span>92
+                                </div>
+                                <div class="cell cell-window">
+                                    <span class="cell-label">2,4</span>102
+                                </div>
+                                <div class="cell cell-add">
+                                    <span class="cell-label">2,5</span>+
+                                </div>
+                                <div class="cell cell-gray">
+                                    <span class="cell-label">2,6</span>122
+                                </div>
+                            </div>
+                            <div
+                                class="col-labels"
+                                style="grid-template-columns: repeat(7, 48px)"
+                            >
+                                <div class="col-label">c=0</div>
+                                <div class="col-label">c=1</div>
+                                <div class="col-label">c=2</div>
+                                <div class="col-label">c=3</div>
+                                <div class="col-label">c=4</div>
+                                <div
+                                    class="col-label"
+                                    style="color: #276749; font-weight: bold"
+                                >
+                                    c=5
+                                </div>
+                                <div class="col-label">c=6</div>
+                            </div>
+                            <p
+                                style="
+                                    margin-top: 10px;
+                                    font-size: 0.85em;
+                                    color: #718096;
+                                "
+                            >
+                                Window: columns $[j-r, j+r] = [4-1, 4+1] = [3,
+                                5]$
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Legend -->
+                    <div class="legend">
+                        <div class="legend-item">
+                            <div
+                                class="legend-color"
+                                style="background: #a0aec0"
+                            ></div>
+                            <span>Outside window</span>
+                        </div>
+                        <div class="legend-item">
+                            <div
+                                class="legend-color"
+                                style="background: #9ae6b4"
+                            ></div>
+                            <span>Inside window</span>
+                        </div>
+                        <div class="legend-item">
+                            <div
+                                class="legend-color"
+                                style="background: #38a169"
+                            ></div>
+                            <span>Center pixel ●</span>
+                        </div>
+                        <div class="legend-item">
+                            <div
+                                class="legend-color"
+                                style="
+                                    background: #fc8181;
+                                    box-shadow: inset 0 0 0 2px #c53030;
+                                "
+                            ></div>
+                            <span>Removed: $h_{j-r} = h_2$</span>
+                        </div>
+                        <div class="legend-item">
+                            <div
+                                class="legend-color"
+                                style="
+                                    background: #68d391;
+                                    box-shadow: inset 0 0 0 2px #276749;
+                                "
+                            ></div>
+                            <span>Added: $h_{j+r+1} = h_5$</span>
+                        </div>
+                    </div>
+
+                    <!-- Formula -->
+                    <div class="eq-box" style="margin-top: 20px">
+                        <div class="eq-label">Update Equation</div>
+                        <div class="math-display">
+                            $$H_{1,4} = H_{1,3} - h_2 + h_5$$
+                        </div>
+                        <p class="comment">
+                            Subtract column 2's histogram, add column 5's
+                            histogram — each has $L=256$ bins
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Complexity Comparison Table -->
+            <div class="section">
+                <h2>Comprehensive Complexity Comparison</h2>
+
+                <table class="compare-table">
+                    <tr>
+                        <th>Method</th>
+                        <th>Per-Pixel Operations</th>
+                        <th>At $r=10$</th>
+                        <th>At $r=100$</th>
+                        <th>At $r=300$</th>
+                    </tr>
+                    <tr>
+                        <td class="method-name">
+                            Naive <span class="complexity bad">O(r²)</span>
+                        </td>
+                        <td>$(2r+1)^2$</td>
+                        <td>441</td>
+                        <td>40,401</td>
+                        <td>361,201</td>
+                    </tr>
+                    <tr>
+                        <td class="method-name">
+                            Huang <span class="complexity mid">O(r)</span>
+                        </td>
+                        <td>$2(2r+1)$</td>
+                        <td>42</td>
+                        <td>402</td>
+                        <td>1,202</td>
+                    </tr>
+                    <tr>
+                        <td class="method-name">
+                            Zig-zag <span class="complexity mid">O(r)</span>
+                        </td>
+                        <td>$2(2r+1)$*</td>
+                        <td>42</td>
+                        <td>402</td>
+                        <td>1,202</td>
+                    </tr>
+                    <tr class="highlight-row">
+                        <td class="method-name">
+                            Perreault <span class="complexity">O(1)</span>
+                        </td>
+                        <td>$2L + 2 = 514$</td>
+                        <td>514</td>
+                        <td>514</td>
+                        <td>514</td>
+                    </tr>
+                </table>
+
+                <p style="font-size: 0.85em; color: #718096">
+                    *Zig-zag avoids row-start reinitialization, giving ~8%
+                    speedup at large $r$, but same asymptotic complexity.
+                </p>
+
+                <div class="key-point">
+                    <strong>Crossover Analysis:</strong>
+                    <div class="math-display">
+                        $$2(2r+1) = 2L + 2 \quad \Rightarrow \quad r =
+                        \frac{L}{2} = 128$$
+                    </div>
+                    <p>
+                        Theoretically, O(1) wins when $r > 128$. In practice,
+                        due to memory access patterns and SIMD vectorization of
+                        histogram operations, crossover occurs around
+                        <strong>$r \approx 9$</strong>.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Why SIMD Helps -->
+            <div class="section">
+                <h2>Implementation Detail: Why O(1) Has Low Constant Factor</h2>
+
+                <p>The $2L = 512$ operations per pixel might seem high, but:</p>
+
+                <div class="step-box">
+                    <div class="step-title">SIMD Vectorization</div>
+                    <p>
+                        Histogram addition/subtraction is
+                        <strong>embarrassingly parallel</strong>:
+                    </p>
+                    <div class="math-display">
+                        $$H[0..255] = H[0..255] + h_c[0..255]$$
+                    </div>
+                    <p>
+                        Modern CPUs process 8–16 integers per instruction
+                        (AVX2/AVX-512). Effective cost: ~32–64 instructions
+                        instead of 256.
+                    </p>
+                </div>
+
+                <div class="step-box">
+                    <div class="step-title">Cache-Friendly Access</div>
+                    <p>
+                        Column histograms are contiguous in memory. Sequential
+                        access patterns maximize cache utilization.
+                    </p>
+                </div>
+
+                <div class="step-box">
+                    <div class="step-title">Batch Column Updates</div>
+                    <p>
+                        When moving to a new row, ALL column histograms are
+                        updated together:
+                    </p>
+                    <div class="pseudo-code">
+                        <span class="keyword">for</span> c = 0
+                        <span class="keyword">to</span> N-1:<br />
+                        &nbsp;&nbsp;h[c][I[i-r, c]] -= 1
+                        <span class="comment">// Remove top row</span><br />
+                        &nbsp;&nbsp;h[c][I[i+r+1, c]] += 1
+                        <span class="comment">// Add bottom row</span>
+                    </div>
+                    <p>
+                        This sequential memory access is much faster than random
+                        access in Huang's method.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Summary -->
+            <div class="section">
+                <h2>Summary</h2>
+
+                <table>
+                    <tr>
+                        <th>Aspect</th>
+                        <th>Naive</th>
+                        <th>Huang</th>
+                        <th>Perreault (This Paper)</th>
+                    </tr>
+                    <tr>
+                        <td><strong>Complexity</strong></td>
+                        <td><span class="complexity bad">O(r²)</span></td>
+                        <td><span class="complexity mid">O(r)</span></td>
+                        <td><span class="complexity">O(1)</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Update unit</strong></td>
+                        <td>Individual pixels</td>
+                        <td>Individual pixels in column</td>
+                        <td>Entire column histograms</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Memory</strong></td>
+                        <td>$O(L)$</td>
+                        <td>$O(L)$</td>
+                        <td>$O(N \cdot L)$</td>
+                    </tr>
+                    <tr>
+                        <td><strong>SIMD friendly</strong></td>
+                        <td>No</td>
+                        <td>No</td>
+                        <td><strong>Yes</strong></td>
+                    </tr>
+                    <tr>
+                        <td><strong>At $r=300$</strong></td>
+                        <td>>>10s</td>
+                        <td>~900ms</td>
+                        <td><strong>~45ms</strong></td>
+                    </tr>
+                </table>
+
+                <div class="key-point success">
+                    <strong>Key Takeaway:</strong> By representing the kernel
+                    histogram as a sum of column histograms (Eq. 4), updates
+                    become $L$-bin vector operations instead of pixel-by-pixel
+                    updates. This transforms $O(r)$ per-pixel cost into $O(L) =
+                    O(1)$ with respect to filter radius.
+                </div>
+            </div>
+
+            <p
+                style="
+                    color: #718096;
+                    text-align: center;
+                    margin-top: 30px;
+                    font-size: 0.85em;
+                "
+            >
+                Paper: Härtinger & Steger, J. Real-Time Image Processing (2024)
+                21:93
+            </p>
+        </div>
+    </body>
+</html>

@@ -1,0 +1,1199 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AHE O(1) - Section 3.2 Detailed with Animations</title>
+    <!-- MathJax for LaTeX -->
+    <script>
+        MathJax = {
+            tex: {
+                inlineMath: [["$", "$"], ["\\(", "\\)"]],
+                displayMath: [["$$", "$$"], ["\\[", "\\]"]],
+            },
+            svg: { fontCache: "global" },
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: "Segoe UI", sans-serif;
+            line-height: 1.8;
+            color: #1a202c;
+            background: #f7fafc;
+            padding: 20px;
+        }
+        .container { max-width: 1100px; margin: 0 auto; }
+
+        h1 { font-size: 1.8em; color: #2d3748; margin-bottom: 5px; }
+        h2 {
+            font-size: 1.4em;
+            color: #553c9a;
+            margin: 35px 0 20px 0;
+            padding: 12px 18px;
+            background: linear-gradient(90deg, #e9d8fd, transparent);
+            border-left: 4px solid #805ad5;
+        }
+        h3 { font-size: 1.15em; color: #2d3748; margin: 25px 0 12px 0; }
+        h4 { font-size: 1.05em; color: #4a5568; margin: 20px 0 10px 0; }
+        p { margin-bottom: 14px; }
+
+        .section {
+            background: white;
+            padding: 30px;
+            margin-bottom: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.06);
+        }
+
+        .subtitle { color: #718096; margin-bottom: 25px; }
+
+        .eq-box {
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 18px 22px;
+            border-radius: 8px;
+            margin: 18px 0;
+            overflow-x: auto;
+        }
+        .eq-box .eq-label {
+            color: #68d391;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        .eq-box .comment { color: #718096; font-style: italic; }
+
+        .key-point {
+            background: #ebf8ff;
+            border-left: 4px solid #3182ce;
+            padding: 15px 18px;
+            margin: 18px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .key-point.success { background: #c6f6d5; border-color: #38a169; }
+        .key-point.warning { background: #fefcbf; border-color: #d69e2e; }
+
+        .complexity {
+            display: inline-block;
+            background: #48bb78;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        .complexity.bad { background: #f56565; }
+        .complexity.mid { background: #ed8936; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 18px 0;
+            font-size: 0.95em;
+        }
+        th, td {
+            padding: 12px 14px;
+            border: 1px solid #e2e8f0;
+            text-align: center;
+        }
+        th { background: #805ad5; color: white; }
+        tr:nth-child(even) { background: #f7fafc; }
+        .highlight-row { background: #c6f6d5 !important; }
+
+        /* Animation Controls */
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #805ad5, #553c9a);
+            color: white;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(128, 90, 213, 0.4);
+        }
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+        .btn-secondary:hover { background: #cbd5e0; }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Grid Visualization */
+        .visual-container {
+            background: #f7fafc;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 25px 0;
+        }
+
+        .anim-grid-container {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            align-items: flex-start;
+            flex-wrap: wrap;
+        }
+
+        .grid-panel { text-align: center; }
+        .grid-panel-title {
+            font-weight: bold;
+            margin-bottom: 12px;
+            color: #2d3748;
+            min-height: 24px;
+        }
+
+        .mini-grid {
+            display: grid;
+            gap: 3px;
+            background: #2d3748;
+            padding: 3px;
+            border-radius: 6px;
+        }
+        .cell {
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75em;
+            font-weight: bold;
+            border-radius: 4px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        .cell-label {
+            position: absolute;
+            top: 2px;
+            left: 4px;
+            font-size: 0.55em;
+            opacity: 0.7;
+        }
+
+        .cell-gray { background: #a0aec0; color: #2d3748; }
+        .cell-window { background: #9ae6b4; color: #1a202c; }
+        .cell-center { background: #38a169; color: white; }
+        .cell-remove {
+            background: #fc8181;
+            color: #1a202c;
+            box-shadow: inset 0 0 0 3px #c53030;
+            animation: pulse-red 0.5s ease;
+        }
+        .cell-add {
+            background: #68d391;
+            color: #1a202c;
+            box-shadow: inset 0 0 0 3px #276749;
+            animation: pulse-green 0.5s ease;
+        }
+
+        @keyframes pulse-red {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        @keyframes pulse-green {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        /* Histogram Visualization */
+        .histogram-container {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+        .histogram-panel {
+            text-align: center;
+            min-width: 280px;
+        }
+        .histogram-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #2d3748;
+        }
+        .histogram {
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            height: 120px;
+            gap: 3px;
+            padding: 10px;
+            background: #2d3748;
+            border-radius: 8px;
+        }
+        .hist-bar {
+            width: 18px;
+            background: linear-gradient(to top, #805ad5, #b794f4);
+            border-radius: 3px 3px 0 0;
+            transition: height 0.4s ease, background 0.3s ease;
+            position: relative;
+        }
+        .hist-bar.highlight-remove {
+            background: linear-gradient(to top, #c53030, #fc8181);
+        }
+        .hist-bar.highlight-add {
+            background: linear-gradient(to top, #276749, #68d391);
+        }
+        .hist-bar-label {
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.7em;
+            color: #a0aec0;
+        }
+        .histogram-info {
+            margin-top: 25px;
+            font-size: 0.85em;
+            color: #718096;
+        }
+
+        /* Step boxes */
+        .step-container { margin: 25px 0; }
+        .step-box {
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            position: relative;
+        }
+        .step-box.highlight {
+            border-color: #805ad5;
+            background: #faf5ff;
+        }
+        .step-number {
+            position: absolute;
+            top: -12px;
+            left: 20px;
+            background: #805ad5;
+            color: white;
+            padding: 4px 14px;
+            border-radius: 15px;
+            font-weight: bold;
+            font-size: 0.85em;
+        }
+        .step-title {
+            font-weight: bold;
+            color: #2d3748;
+            margin-bottom: 10px;
+            margin-top: 5px;
+        }
+
+        /* Pseudo code */
+        .pseudo-code {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px 18px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.88em;
+            margin: 15px 0;
+            overflow-x: auto;
+            line-height: 1.6;
+        }
+        .pseudo-code .keyword { color: #f687b3; }
+        .pseudo-code .func { color: #68d391; }
+        .pseudo-code .comment { color: #718096; }
+        .pseudo-code .highlight-line {
+            background: rgba(104, 211, 145, 0.2);
+            display: inline-block;
+            width: 100%;
+            margin: 0 -18px;
+            padding: 0 18px;
+        }
+
+        /* Operation Counter */
+        .op-counter {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        .op-item {
+            text-align: center;
+            padding: 15px 25px;
+            background: #edf2f7;
+            border-radius: 10px;
+            min-width: 150px;
+        }
+        .op-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #805ad5;
+            transition: all 0.3s ease;
+        }
+        .op-value.counting {
+            color: #38a169;
+            transform: scale(1.1);
+        }
+        .op-label {
+            font-size: 0.85em;
+            color: #718096;
+            margin-top: 5px;
+        }
+
+        /* Comparison Animation */
+        .race-container {
+            background: #1a202c;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 20px 0;
+        }
+        .race-title {
+            color: #e2e8f0;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .race-track {
+            margin-bottom: 15px;
+        }
+        .race-label {
+            color: #a0aec0;
+            font-size: 0.85em;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .race-bar-bg {
+            height: 30px;
+            background: #2d3748;
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+        }
+        .race-bar {
+            height: 100%;
+            border-radius: 15px;
+            transition: width 0.1s linear;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 10px;
+            font-size: 0.8em;
+            font-weight: bold;
+            color: white;
+        }
+        .race-bar.naive { background: linear-gradient(90deg, #fc8181, #c53030); }
+        .race-bar.huang { background: linear-gradient(90deg, #f6ad55, #dd6b20); }
+        .race-bar.perreault { background: linear-gradient(90deg, #68d391, #38a169); }
+
+        /* Legend */
+        .legend {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85em;
+        }
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+
+        /* Status display */
+        .status-display {
+            text-align: center;
+            padding: 15px;
+            background: #edf2f7;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-weight: 500;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .math-display { overflow-x: auto; padding: 10px 0; }
+        ul, ol { margin-left: 25px; margin-bottom: 14px; }
+        li { margin-bottom: 6px; }
+
+        /* Column histogram visual */
+        .col-hist-visual {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+            margin: 10px 0;
+        }
+        .col-hist-bar {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+        }
+        .col-hist-box {
+            width: 40px;
+            height: 25px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7em;
+            font-weight: bold;
+            color: white;
+            transition: all 0.3s ease;
+        }
+        .col-hist-label {
+            font-size: 0.7em;
+            color: #718096;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="section">
+            <h1>§3.2 Sliding-Window Histogram Computation</h1>
+            <p class="subtitle">The Core Technique Behind O(1) AHE — Interactive Visualization</p>
+            
+            <div class="key-point">
+                <strong>Goal:</strong> Compute histogram $H_{i,j}$ for every pixel $(i,j)$ efficiently. This dominates AHE runtime.
+            </div>
+        </div>
+
+        <!-- Notation Recap -->
+        <div class="section">
+            <h2>Notation Recap</h2>
+            
+            <div class="eq-box">
+                <div class="eq-label">Setup</div>
+                <div class="math-display">
+                    $$\begin{aligned}
+                    &\text{Image: } \mathcal{I} \in \{0, \ldots, 255\}^{M \times N} \\
+                    &\text{Filter radius: } r \in \mathbb{N} \quad \Rightarrow \quad \text{Window size: } (2r+1) \times (2r+1) \\
+                    &\text{Histogram bins: } L = 256 \text{ (for 8-bit images)} \\
+                    &\text{Window pixel count: } n = (2r+1)^2
+                    \end{aligned}$$
+                </div>
+            </div>
+
+            <div class="eq-box">
+                <div class="eq-label">Equation (1): Kernel Histogram</div>
+                <div class="math-display">
+                    $$H_{i,j}(g) = \sum_{x=i-r}^{i+r} \sum_{y=j-r}^{j+r} \left[ \mathcal{I}_{x,y} = g \right]$$
+                </div>
+                <p class="comment">Count of pixels with gray value $g$ in window centered at $(i,j)$</p>
+            </div>
+        </div>
+
+        <!-- Interactive Sliding Window Demo -->
+        <div class="section">
+            <h2>Interactive: Sliding Window Animation</h2>
+            
+            <p>Watch how the window slides across the image and observe the histogram updates in real-time.</p>
+            
+            <div class="visual-container">
+                <div class="anim-grid-container">
+                    <!-- Image Grid -->
+                    <div class="grid-panel">
+                        <div class="grid-panel-title">Image Grid (7×5)</div>
+                        <div class="mini-grid" id="anim-grid" style="grid-template-columns: repeat(7, 44px);"></div>
+                        <div class="status-display" id="position-display">Center: (1, 2) | Window: cols [1, 3]</div>
+                    </div>
+                    
+                    <!-- Column Histograms Representation -->
+                    <div class="grid-panel">
+                        <div class="grid-panel-title">Column Histograms $h_c$</div>
+                        <div class="col-hist-visual" id="col-hist-visual"></div>
+                        <div style="margin-top:15px; font-size:0.85em; color:#718096;">
+                            Kernel $H$ = sum of highlighted columns
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="controls">
+                    <button class="btn btn-secondary" id="btn-reset" onclick="resetAnimation()">⟲ Reset</button>
+                    <button class="btn btn-primary" id="btn-step" onclick="stepAnimation()">→ Step</button>
+                    <button class="btn btn-primary" id="btn-play" onclick="playAnimation()">▶ Play</button>
+                    <button class="btn btn-secondary" id="btn-pause" onclick="pauseAnimation()" disabled>⏸ Pause</button>
+                </div>
+                
+                <!-- Histogram Display -->
+                <div class="histogram-container">
+                    <div class="histogram-panel">
+                        <div class="histogram-title">Kernel Histogram $H_{i,j}$</div>
+                        <div class="histogram" id="kernel-histogram"></div>
+                        <div class="histogram-info" id="histogram-info">
+                            Total pixels in window: <strong id="window-count">9</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Operation Counter -->
+                <div class="op-counter">
+                    <div class="op-item">
+                        <div class="op-value" id="op-subtract">0</div>
+                        <div class="op-label">Subtract ops (−$h_c$)</div>
+                    </div>
+                    <div class="op-item">
+                        <div class="op-value" id="op-add">0</div>
+                        <div class="op-label">Add ops (+$h_c$)</div>
+                    </div>
+                    <div class="op-item">
+                        <div class="op-value" id="op-total">0</div>
+                        <div class="op-label">Total: $2L$ per step</div>
+                    </div>
+                </div>
+
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background:#a0aec0;"></div>
+                        <span>Outside window</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background:#9ae6b4;"></div>
+                        <span>Inside window</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background:#38a169;"></div>
+                        <span>Center pixel</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background:#fc8181; box-shadow: inset 0 0 0 2px #c53030;"></div>
+                        <span>Removed column</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background:#68d391; box-shadow: inset 0 0 0 2px #276749;"></div>
+                        <span>Added column</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Method Comparison with Animation -->
+        <div class="section">
+            <h2>Complexity Race: O(r²) vs O(r) vs O(1)</h2>
+            
+            <p>Compare how many operations each method needs as the window slides. Set the filter radius and watch the race!</p>
+            
+            <div class="controls">
+                <label style="display:flex; align-items:center; gap:10px;">
+                    Filter radius $r$: 
+                    <input type="range" id="radius-slider" min="5" max="100" value="25" style="width:150px;">
+                    <span id="radius-value">25</span>
+                </label>
+                <button class="btn btn-primary" onclick="startRace()">▶ Start Race</button>
+            </div>
+            
+            <div class="race-container">
+                <div class="race-title">Operations per pixel (lower = faster)</div>
+                
+                <div class="race-track">
+                    <div class="race-label">
+                        <span>Naive O(r²): <span id="naive-ops">0</span> ops</span>
+                        <span id="naive-formula">(2r+1)² = 2601</span>
+                    </div>
+                    <div class="race-bar-bg">
+                        <div class="race-bar naive" id="naive-bar" style="width: 0%"></div>
+                    </div>
+                </div>
+                
+                <div class="race-track">
+                    <div class="race-label">
+                        <span>Huang O(r): <span id="huang-ops">0</span> ops</span>
+                        <span id="huang-formula">2(2r+1) = 102</span>
+                    </div>
+                    <div class="race-bar-bg">
+                        <div class="race-bar huang" id="huang-bar" style="width: 0%"></div>
+                    </div>
+                </div>
+                
+                <div class="race-track">
+                    <div class="race-label">
+                        <span>Perreault O(1): <span id="perreault-ops">0</span> ops</span>
+                        <span id="perreault-formula">2L + 2 = 514</span>
+                    </div>
+                    <div class="race-bar-bg">
+                        <div class="race-bar perreault" id="perreault-bar" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="key-point" id="race-result" style="display:none;">
+                <strong>Result:</strong> <span id="race-winner"></span>
+            </div>
+        </div>
+
+        <!-- O(1) Derivation with Step Animation -->
+        <div class="section">
+            <h2>Why It's O(1): Step-by-Step Derivation</h2>
+            
+            <div class="controls">
+                <button class="btn btn-primary" onclick="animateDerivation()">▶ Animate Steps</button>
+                <button class="btn btn-secondary" onclick="resetDerivation()">⟲ Reset</button>
+            </div>
+
+            <div class="step-container">
+                <div class="step-box" id="deriv-step-1">
+                    <div class="step-number">Step 1</div>
+                    <div class="step-title">Data Structure: Maintain $N$ Column Histograms</div>
+
+                    <p>For an image with $N$ columns, we maintain:</p>
+                    <div class="math-display">
+                        $$h_0, h_1, h_2, \ldots, h_{N-1} \quad \text{where each } h_c \in \mathbb{N}^L$$
+                    </div>
+
+                    <div class="col-hist-visual" id="step1-visual">
+                        <!-- Generated by JS -->
+                    </div>
+
+                    <p><strong>Memory:</strong> $N \times L$ integers (e.g., $1000 \times 256 = 256\text{KB}$)</p>
+                </div>
+
+                <div class="step-box" id="deriv-step-2" style="opacity: 0.4;">
+                    <div class="step-number">Step 2</div>
+                    <div class="step-title">Horizontal Slide: Update Kernel Histogram</div>
+
+                    <p>When the window moves from $(i, j)$ to $(i, j+1)$:</p>
+
+                    <div class="eq-box">
+                        <div class="eq-label">Update Rule</div>
+                        <div class="math-display">
+                            $$H_{i,j+1} = H_{i,j} - h_{j-r} + h_{j+r+1}$$
+                        </div>
+                    </div>
+
+                    <p><strong>Operation breakdown:</strong></p>
+                    <ul>
+                        <li>Subtract entire column histogram $h_{j-r}$ (leftmost column exiting)</li>
+                        <li>Add entire column histogram $h_{j+r+1}$ (new rightmost column entering)</li>
+                    </ul>
+
+                    <p><strong>Cost:</strong></p>
+                    <div class="math-display">
+                        $$\underbrace{L \text{ subtractions}}_{\text{remove } h_{j-r}} + \underbrace{L \text{ additions}}_{\text{add } h_{j+r+1}} = 2L = 512 \text{ operations}$$
+                    </div>
+                </div>
+
+                <div class="step-box" id="deriv-step-3" style="opacity: 0.4;">
+                    <div class="step-number">Step 3</div>
+                    <div class="step-title">Vertical Move: Update All Column Histograms</div>
+
+                    <p>When moving to the next row (from row $i$ to row $i+1$):</p>
+
+                    <div class="eq-box">
+                        <div class="eq-label">Column Histogram Update</div>
+                        <div class="math-display">
+                            $$h_c^{\text{new}}(g) = h_c^{\text{old}}(g) - \left[\mathcal{I}_{i-r, c} = g\right] + \left[\mathcal{I}_{i+r+1, c} = g\right]$$
+                        </div>
+                    </div>
+
+                    <p><strong>Amortized cost per pixel:</strong></p>
+                    <div class="math-display">
+                        $$\frac{2N \text{ (row update)}}{N \text{ (pixels per row)}} = 2 \text{ operations per pixel}$$
+                    </div>
+                </div>
+
+                <div class="step-box highlight" id="deriv-step-4" style="opacity: 0.4;">
+                    <div class="step-number">Step 4</div>
+                    <div class="step-title">Total Per-Pixel Complexity</div>
+
+                    <div class="eq-box">
+                        <div class="eq-label">Final Complexity</div>
+                        <div class="math-display">
+                            $$\underbrace{2L}_{\text{kernel update}} + \underbrace{2}_{\text{column update (amortized)}} = 2L + 2 = O(L) = O(1) \text{ w.r.t. } r$$
+                        </div>
+                    </div>
+
+                    <div class="key-point success">
+                        <strong>Key:</strong> $2L + 2 = 514$ is a <em>constant</em> — independent of $r$!
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Comprehensive Comparison Table -->
+        <div class="section">
+            <h2>Comprehensive Complexity Comparison</h2>
+
+            <table>
+                <tr>
+                    <th>Method</th>
+                    <th>Per-Pixel Operations</th>
+                    <th>At $r=10$</th>
+                    <th>At $r=100$</th>
+                    <th>At $r=300$</th>
+                </tr>
+                <tr>
+                    <td>Naive <span class="complexity bad">O(r²)</span></td>
+                    <td>$(2r+1)^2$</td>
+                    <td>441</td>
+                    <td>40,401</td>
+                    <td>361,201</td>
+                </tr>
+                <tr>
+                    <td>Huang <span class="complexity mid">O(r)</span></td>
+                    <td>$2(2r+1)$</td>
+                    <td>42</td>
+                    <td>402</td>
+                    <td>1,202</td>
+                </tr>
+                <tr>
+                    <td>Zig-zag <span class="complexity mid">O(r)</span></td>
+                    <td>$2(2r+1)$*</td>
+                    <td>42</td>
+                    <td>402</td>
+                    <td>1,202</td>
+                </tr>
+                <tr class="highlight-row">
+                    <td>Perreault <span class="complexity">O(1)</span></td>
+                    <td>$2L + 2 = 514$</td>
+                    <td>514</td>
+                    <td>514</td>
+                    <td>514</td>
+                </tr>
+            </table>
+
+            <p style="font-size: 0.85em; color: #718096">
+                *Zig-zag avoids row-start reinitialization, giving ~8% speedup at large $r$, but same asymptotic complexity.
+            </p>
+
+            <div class="key-point">
+                <strong>Crossover Analysis:</strong>
+                <div class="math-display">
+                    $$2(2r+1) = 2L + 2 \quad \Rightarrow \quad r = \frac{L}{2} = 128$$
+                </div>
+                <p>Theoretically, O(1) wins when $r > 128$. In practice, due to SIMD vectorization, crossover occurs around <strong>$r \approx 9$</strong>.</p>
+            </div>
+        </div>
+
+        <!-- Summary -->
+        <div class="section">
+            <h2>Summary</h2>
+
+            <table>
+                <tr>
+                    <th>Aspect</th>
+                    <th>Naive</th>
+                    <th>Huang</th>
+                    <th>Perreault (This Paper)</th>
+                </tr>
+                <tr>
+                    <td><strong>Complexity</strong></td>
+                    <td><span class="complexity bad">O(r²)</span></td>
+                    <td><span class="complexity mid">O(r)</span></td>
+                    <td><span class="complexity">O(1)</span></td>
+                </tr>
+                <tr>
+                    <td><strong>Update unit</strong></td>
+                    <td>Individual pixels</td>
+                    <td>Individual pixels in column</td>
+                    <td>Entire column histograms</td>
+                </tr>
+                <tr>
+                    <td><strong>Memory</strong></td>
+                    <td>$O(L)$</td>
+                    <td>$O(L)$</td>
+                    <td>$O(N \cdot L)$</td>
+                </tr>
+                <tr>
+                    <td><strong>SIMD friendly</strong></td>
+                    <td>No</td>
+                    <td>No</td>
+                    <td><strong>Yes</strong></td>
+                </tr>
+                <tr>
+                    <td><strong>At $r=300$</strong></td>
+                    <td>>>10s</td>
+                    <td>~900ms</td>
+                    <td><strong>~45ms</strong></td>
+                </tr>
+            </table>
+
+            <div class="key-point success">
+                <strong>Key Takeaway:</strong> By representing the kernel histogram as a sum of column histograms (Eq. 4), updates become $L$-bin vector operations instead of pixel-by-pixel updates. This transforms $O(r)$ per-pixel cost into $O(L) = O(1)$ with respect to filter radius.
+            </div>
+        </div>
+
+        <p style="color: #718096; text-align: center; margin-top: 30px; font-size: 0.85em;">
+            Paper: Härtinger & Steger, J. Real-Time Image Processing (2024) 21:93
+        </p>
+    </div>
+
+    <script>
+        // ============ SLIDING WINDOW ANIMATION ============
+        const GRID_ROWS = 5;
+        const GRID_COLS = 7;
+        const RADIUS = 1;
+        const L = 8; // Simplified histogram bins for visualization
+
+        // Generate random gray values (simplified to 0-7 for visualization)
+        const imageData = [];
+        for (let i = 0; i < GRID_ROWS; i++) {
+            imageData[i] = [];
+            for (let j = 0; j < GRID_COLS; j++) {
+                imageData[i][j] = Math.floor(Math.random() * L);
+            }
+        }
+
+        // Current window position
+        let centerRow = 1;
+        let centerCol = 2;
+        let animInterval = null;
+        let opSubtract = 0;
+        let opAdd = 0;
+        let prevCenterCol = -1;
+
+        // Initialize the grid
+        function initGrid() {
+            const grid = document.getElementById('anim-grid');
+            grid.innerHTML = '';
+            
+            for (let i = 0; i < GRID_ROWS; i++) {
+                for (let j = 0; j < GRID_COLS; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell cell-gray';
+                    cell.id = `cell-${i}-${j}`;
+                    cell.innerHTML = `<span class="cell-label">${i},${j}</span>${imageData[i][j]}`;
+                    grid.appendChild(cell);
+                }
+            }
+            
+            // Initialize column histogram visual
+            const colHistVisual = document.getElementById('col-hist-visual');
+            colHistVisual.innerHTML = '';
+            for (let c = 0; c < GRID_COLS; c++) {
+                const colDiv = document.createElement('div');
+                colDiv.className = 'col-hist-bar';
+                colDiv.innerHTML = `
+                    <div class="col-hist-box" id="col-hist-${c}" style="background:#805ad5;">h${c}</div>
+                    <div class="col-hist-label">c=${c}</div>
+                `;
+                colHistVisual.appendChild(colDiv);
+            }
+            
+            // Initialize histogram
+            initHistogram();
+            
+            updateGridDisplay();
+        }
+
+        function initHistogram() {
+            const histContainer = document.getElementById('kernel-histogram');
+            histContainer.innerHTML = '';
+            
+            for (let g = 0; g < L; g++) {
+                const bar = document.createElement('div');
+                bar.className = 'hist-bar';
+                bar.id = `hist-bar-${g}`;
+                bar.style.height = '0px';
+                bar.innerHTML = `<span class="hist-bar-label">${g}</span>`;
+                histContainer.appendChild(bar);
+            }
+        }
+
+        function updateGridDisplay() {
+            const removedCol = (prevCenterCol >= 0 && centerCol > prevCenterCol) ? prevCenterCol - RADIUS : -1;
+            const addedCol = (prevCenterCol >= 0 && centerCol > prevCenterCol) ? centerCol + RADIUS : -1;
+            
+            // Update cells
+            for (let i = 0; i < GRID_ROWS; i++) {
+                for (let j = 0; j < GRID_COLS; j++) {
+                    const cell = document.getElementById(`cell-${i}-${j}`);
+                    cell.className = 'cell';
+                    
+                    const inWindowRow = (i >= centerRow - RADIUS && i <= centerRow + RADIUS);
+                    const inWindowCol = (j >= centerCol - RADIUS && j <= centerCol + RADIUS);
+                    
+                    if (i === centerRow && j === centerCol) {
+                        cell.classList.add('cell-center');
+                    } else if (inWindowRow && j === removedCol) {
+                        cell.classList.add('cell-remove');
+                    } else if (inWindowRow && j === addedCol) {
+                        cell.classList.add('cell-add');
+                    } else if (inWindowRow && inWindowCol) {
+                        cell.classList.add('cell-window');
+                    } else {
+                        cell.classList.add('cell-gray');
+                    }
+                }
+            }
+            
+            // Update column histogram visual
+            for (let c = 0; c < GRID_COLS; c++) {
+                const colHist = document.getElementById(`col-hist-${c}`);
+                const inWindow = (c >= centerCol - RADIUS && c <= centerCol + RADIUS);
+                
+                if (c === removedCol) {
+                    colHist.style.background = '#c53030';
+                } else if (c === addedCol) {
+                    colHist.style.background = '#38a169';
+                } else if (inWindow) {
+                    colHist.style.background = '#805ad5';
+                } else {
+                    colHist.style.background = '#a0aec0';
+                }
+            }
+            
+            // Update histogram
+            updateHistogram();
+            
+            // Update position display
+            const leftCol = centerCol - RADIUS;
+            const rightCol = centerCol + RADIUS;
+            document.getElementById('position-display').innerHTML = 
+                `Center: (${centerRow}, ${centerCol}) | Window: cols [${leftCol}, ${rightCol}]`;
+            
+            // Update window count
+            const windowSize = (2 * RADIUS + 1) * (2 * RADIUS + 1);
+            document.getElementById('window-count').textContent = windowSize;
+        }
+
+        function updateHistogram() {
+            // Compute histogram for current window
+            const histogram = new Array(L).fill(0);
+            
+            for (let i = centerRow - RADIUS; i <= centerRow + RADIUS; i++) {
+                for (let j = centerCol - RADIUS; j <= centerCol + RADIUS; j++) {
+                    if (i >= 0 && i < GRID_ROWS && j >= 0 && j < GRID_COLS) {
+                        histogram[imageData[i][j]]++;
+                    }
+                }
+            }
+            
+            // Update histogram bars
+            const maxCount = Math.max(...histogram, 1);
+            for (let g = 0; g < L; g++) {
+                const bar = document.getElementById(`hist-bar-${g}`);
+                const height = (histogram[g] / maxCount) * 100;
+                bar.style.height = `${height}px`;
+            }
+        }
+
+        function stepAnimation() {
+            prevCenterCol = centerCol;
+            
+            // Move right
+            centerCol++;
+            
+            // If reached end of row, go to next row
+            if (centerCol > GRID_COLS - 1 - RADIUS) {
+                centerCol = RADIUS;
+                centerRow++;
+                prevCenterCol = -1; // Reset, no horizontal slide animation
+                
+                // If reached end of grid, reset
+                if (centerRow > GRID_ROWS - 1 - RADIUS) {
+                    centerRow = RADIUS;
+                    opSubtract = 0;
+                    opAdd = 0;
+                }
+            } else {
+                // Count operations for horizontal slide
+                opSubtract += L;
+                opAdd += L;
+            }
+            
+            updateGridDisplay();
+            updateOpCounter();
+        }
+
+        function updateOpCounter() {
+            document.getElementById('op-subtract').textContent = opSubtract;
+            document.getElementById('op-add').textContent = opAdd;
+            document.getElementById('op-total').textContent = opSubtract + opAdd;
+        }
+
+        function playAnimation() {
+            document.getElementById('btn-play').disabled = true;
+            document.getElementById('btn-pause').disabled = false;
+            document.getElementById('btn-step').disabled = true;
+            
+            animInterval = setInterval(() => {
+                stepAnimation();
+            }, 800);
+        }
+
+        function pauseAnimation() {
+            clearInterval(animInterval);
+            document.getElementById('btn-play').disabled = false;
+            document.getElementById('btn-pause').disabled = true;
+            document.getElementById('btn-step').disabled = false;
+        }
+
+        function resetAnimation() {
+            pauseAnimation();
+            centerRow = RADIUS;
+            centerCol = RADIUS;
+            prevCenterCol = -1;
+            opSubtract = 0;
+            opAdd = 0;
+            updateGridDisplay();
+            updateOpCounter();
+        }
+
+        // ============ COMPLEXITY RACE ============
+        let raceInterval = null;
+
+        document.getElementById('radius-slider').addEventListener('input', function() {
+            document.getElementById('radius-value').textContent = this.value;
+            updateFormulas();
+        });
+
+        function updateFormulas() {
+            const r = parseInt(document.getElementById('radius-slider').value);
+            const naive = Math.pow(2 * r + 1, 2);
+            const huang = 2 * (2 * r + 1);
+            const perreault = 514;
+            
+            document.getElementById('naive-formula').textContent = `(2r+1)² = ${naive}`;
+            document.getElementById('huang-formula').textContent = `2(2r+1) = ${huang}`;
+            document.getElementById('perreault-formula').textContent = `2L + 2 = ${perreault}`;
+        }
+
+        function startRace() {
+            const r = parseInt(document.getElementById('radius-slider').value);
+            const naiveTarget = Math.pow(2 * r + 1, 2);
+            const huangTarget = 2 * (2 * r + 1);
+            const perreaultTarget = 514;
+            
+            const maxOps = naiveTarget;
+            
+            let naiveOps = 0;
+            let huangOps = 0;
+            let perreaultOps = 0;
+            
+            // Reset bars
+            document.getElementById('naive-bar').style.width = '0%';
+            document.getElementById('huang-bar').style.width = '0%';
+            document.getElementById('perreault-bar').style.width = '0%';
+            document.getElementById('naive-ops').textContent = '0';
+            document.getElementById('huang-ops').textContent = '0';
+            document.getElementById('perreault-ops').textContent = '0';
+            document.getElementById('race-result').style.display = 'none';
+            
+            // Speed: complete in ~3 seconds
+            const steps = 60;
+            const naiveStep = naiveTarget / steps;
+            const huangStep = huangTarget / steps;
+            const perreaultStep = perreaultTarget / steps;
+            
+            let step = 0;
+            
+            if (raceInterval) clearInterval(raceInterval);
+            
+            raceInterval = setInterval(() => {
+                step++;
+                
+                naiveOps = Math.min(naiveTarget, Math.round(naiveStep * step));
+                huangOps = Math.min(huangTarget, Math.round(huangStep * step));
+                perreaultOps = Math.min(perreaultTarget, Math.round(perreaultStep * step));
+                
+                document.getElementById('naive-ops').textContent = naiveOps;
+                document.getElementById('huang-ops').textContent = huangOps;
+                document.getElementById('perreault-ops').textContent = perreaultOps;
+                
+                document.getElementById('naive-bar').style.width = `${(naiveOps / maxOps) * 100}%`;
+                document.getElementById('huang-bar').style.width = `${(huangOps / maxOps) * 100}%`;
+                document.getElementById('perreault-bar').style.width = `${(perreaultOps / maxOps) * 100}%`;
+                
+                if (step >= steps) {
+                    clearInterval(raceInterval);
+                    showRaceResult(r, naiveTarget, huangTarget, perreaultTarget);
+                }
+            }, 50);
+        }
+
+        function showRaceResult(r, naive, huang, perreault) {
+            const resultDiv = document.getElementById('race-result');
+            const winnerSpan = document.getElementById('race-winner');
+            
+            let winner, speedup;
+            if (perreault < huang) {
+                winner = 'Perreault O(1)';
+                speedup = (huang / perreault).toFixed(1);
+                winnerSpan.innerHTML = `<span class="complexity">O(1) wins!</span> At r=${r}, Perreault is <strong>${speedup}×</strong> faster than Huang (${perreault} vs ${huang} ops).`;
+            } else {
+                winner = 'Huang O(r)';
+                speedup = (perreault / huang).toFixed(1);
+                winnerSpan.innerHTML = `<span class="complexity mid">O(r) wins at small r.</span> At r=${r}, Huang is <strong>${speedup}×</strong> faster (${huang} vs ${perreault} ops). Try r > 128.`;
+            }
+            
+            resultDiv.style.display = 'block';
+        }
+
+        // ============ DERIVATION ANIMATION ============
+        let derivStep = 0;
+
+        function animateDerivation() {
+            derivStep = 0;
+            resetDerivation();
+            
+            const steps = ['deriv-step-1', 'deriv-step-2', 'deriv-step-3', 'deriv-step-4'];
+            
+            function showNext() {
+                if (derivStep < steps.length) {
+                    document.getElementById(steps[derivStep]).style.opacity = '1';
+                    document.getElementById(steps[derivStep]).style.transform = 'translateX(0)';
+                    derivStep++;
+                    setTimeout(showNext, 1000);
+                }
+            }
+            
+            showNext();
+        }
+
+        function resetDerivation() {
+            const steps = ['deriv-step-1', 'deriv-step-2', 'deriv-step-3', 'deriv-step-4'];
+            steps.forEach((id, idx) => {
+                const el = document.getElementById(id);
+                el.style.opacity = idx === 0 ? '1' : '0.4';
+                el.style.transition = 'all 0.5s ease';
+            });
+        }
+
+        // ============ STEP 1 VISUAL ============
+        function initStep1Visual() {
+            const container = document.getElementById('step1-visual');
+            container.innerHTML = '';
+            
+            for (let c = 0; c < 7; c++) {
+                const colDiv = document.createElement('div');
+                colDiv.className = 'col-hist-bar';
+                colDiv.innerHTML = `
+                    <div class="col-hist-box" style="background:#805ad5; height:35px; width:50px;">$h_${c}$</div>
+                    <div class="col-hist-label" style="font-size:0.75em;">L bins</div>
+                `;
+                container.appendChild(colDiv);
+            }
+        }
+
+        // Initialize on load
+        window.onload = function() {
+            initGrid();
+            updateFormulas();
+            initStep1Visual();
+        };
+    </script>
+</body>
+</html>
