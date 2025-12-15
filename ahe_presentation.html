@@ -3519,9 +3519,9 @@
                             (isCenter
                                 ? "cell-center"
                                 : isRemoving
-                                    ? "cell-removing"
+                                    ? "cell-remove"
                                     : isAdding
-                                        ? "cell-adding"
+                                        ? "cell-add"
                                         : inWindow
                                             ? "cell-window"
                                             : "cell-outside");
@@ -3584,95 +3584,96 @@
             }
 
             function stepSlide05Demo() {
-                const { ROWS, COLS, RADIUS, L } = slide05;
+                if (slide05.completed) return;
 
-                if (slide05.centerCol + 1 + RADIUS > COLS) {
-                    // Check if we can move to the next row
-                    if (slide05.centerRow + 1 + RADIUS < ROWS) {
-                        // Move to next row
-                        slide05.centerRow++;
-                        slide05.centerCol = RADIUS;
-                        slide05.removingCol = null;
-                        slide05.addingCol = null;
+                const { ROWS, COLS, RADIUS, L, centerRow, centerCol } = slide05;
 
-                        // Recompute column histograms for the new row
-                        for (let c = 0; c < COLS; c++) {
-                            slide05.colHistograms[c] = new Array(L).fill(0);
-                            for (
-                                let i = slide05.centerRow - RADIUS;
-                                i <= slide05.centerRow + RADIUS;
-                                i++
-                            ) {
-                                if (i >= 0 && i < ROWS) {
-                                    slide05.colHistograms[c][slide05.imageData[i][c]]++;
-                                }
-                            }
-                        }
+                // Process current position: slide the window right
+                slide05.slideCount++;
+                const leftCol = centerCol - RADIUS - 1;  // The column being removed (left of current window)
+                const rightCol = centerCol + RADIUS;      // The column being added (right edge of current window)
 
-                        // Recompute kernel histogram for the new position
-                        slide05.kernelHistogram = new Array(L).fill(0);
-                        for (let c = slide05.centerCol - RADIUS; c <= slide05.centerCol + RADIUS; c++) {
-                            if (c >= 0 && c < COLS) {
-                                for (let g = 0; g < L; g++) {
-                                    slide05.kernelHistogram[g] += slide05.colHistograms[c][g];
-                                }
-                            }
-                        }
+                // Track which columns are being removed/added for visual feedback
+                slide05.removingCol = leftCol >= 0 ? leftCol : null;
+                slide05.addingCol = rightCol;
 
-                        document.getElementById("slide05-step-label").textContent =
-                            `Step ${slide05.slideCount}: Moved to row ${slide05.centerRow}`;
-                        document.getElementById("slide05-description").innerHTML =
-                            `Starting new row at position (${slide05.centerRow}, ${slide05.centerCol})`;
-
-                        updateSlide05Display();
-                        return;
-                    } else {
-                        // Completely done
-                        document.getElementById("slide05-step-label").textContent =
-                            "Complete!";
-                        document.getElementById("slide05-description").textContent =
-                            `Processed all positions. Total: ${slide05.slideCount} slides with 2L = ${2 * L} ops each = ${slide05.opSubtract + slide05.opAdd} total ops.`;
-                        return;
+                // Perform the histogram update (subtract left column, add right column)
+                if (leftCol >= 0) {
+                    for (let g = 0; g < L; g++) {
+                        slide05.kernelHistogram[g] -= slide05.colHistograms[leftCol][g];
+                        slide05.opSubtract++;
                     }
                 }
 
-                slide05.slideCount++;
-                const leftCol = slide05.centerCol - RADIUS;
-                const rightCol = slide05.centerCol + RADIUS + 1;
-
-                // Track which columns are being removed/added for visual feedback
-                slide05.removingCol = leftCol;
-                slide05.addingCol = rightCol;
-
                 for (let g = 0; g < L; g++) {
-                    slide05.kernelHistogram[g] -=
-                        slide05.colHistograms[leftCol][g];
-                    slide05.opSubtract++;
-                }
-
-                for (let g = 0; g < L; g++) {
-                    slide05.kernelHistogram[g] +=
-                        slide05.colHistograms[rightCol][g];
+                    slide05.kernelHistogram[g] += slide05.colHistograms[rightCol][g];
                     slide05.opAdd++;
                 }
 
                 document.getElementById("slide05-step-label").textContent =
-                    `Step ${slide05.slideCount}: Window at column ${slide05.centerCol + 1}`;
-                document.getElementById("slide05-description").innerHTML =
-                    `Slide right: <span style="color:#f87171;">−h<sub>${leftCol}</sub></span> + <span style="color:#60a5fa;">+h<sub>${rightCol}</sub></span> = ${L} + ${L} = <strong>${2 * L} ops</strong>`;
+                    `Step ${slide05.slideCount}: Window at column ${centerCol}`;
 
-                // Update display BEFORE incrementing centerCol so colors show correctly
+                if (leftCol >= 0) {
+                    document.getElementById("slide05-description").innerHTML =
+                        `Slide right: <span style="color:#f87171;">−h<sub>${leftCol}</sub></span> + <span style="color:#60a5fa;">+h<sub>${rightCol}</sub></span> = ${L} + ${L} = <strong>${2 * L} ops</strong>`;
+                } else {
+                    document.getElementById("slide05-description").innerHTML =
+                        `Initial position: Adding <span style="color:#60a5fa;">+h<sub>${rightCol}</sub></span>`;
+                }
+
                 updateSlide05Display();
 
-                // Now increment centerCol for next step
-                slide05.centerCol++;
+                // Calculate next position (like slide04 does at the end)
+                const nextCol = centerCol + 1;
+                const isLastInRow = nextCol > COLS - 1 - RADIUS;
+                const nextRow = isLastInRow ? centerRow + 1 : centerRow;
+                const isComplete = isLastInRow && nextRow > ROWS - 1 - RADIUS;
+
+                if (isComplete) {
+                    slide05.completed = true;
+                    slide05.removingCol = null;
+                    slide05.addingCol = null;
+                    document.getElementById("slide05-step-label").textContent = "Complete!";
+                    document.getElementById("slide05-description").textContent =
+                        `Processed all positions. Total: ${slide05.slideCount} slides with 2L = ${2 * L} ops each = ${slide05.opSubtract + slide05.opAdd} total ops.`;
+                    updateSlide05Display();
+                    pauseSlide05Demo();
+                } else if (isLastInRow) {
+                    // Move to next row
+                    slide05.centerRow = nextRow;
+                    slide05.centerCol = RADIUS;
+                    slide05.removingCol = null;
+                    slide05.addingCol = null;
+
+                    // Recompute column histograms for the new row
+                    for (let c = 0; c < COLS; c++) {
+                        slide05.colHistograms[c] = new Array(L).fill(0);
+                        for (let i = nextRow - RADIUS; i <= nextRow + RADIUS; i++) {
+                            if (i >= 0 && i < ROWS) {
+                                slide05.colHistograms[c][slide05.imageData[i][c]]++;
+                            }
+                        }
+                    }
+
+                    // Recompute kernel histogram for the new position
+                    computeSlide05Kernel();
+
+                    document.getElementById("slide05-step-label").textContent =
+                        `Step ${slide05.slideCount}: Moved to row ${nextRow}`;
+                    document.getElementById("slide05-description").innerHTML =
+                        `Starting new row at position (${nextRow}, ${RADIUS})`;
+                    updateSlide05Display();
+                } else {
+                    // Move to next column in same row
+                    slide05.centerCol = nextCol;
+                }
             }
 
             function playSlide05Demo() {
                 document.getElementById("btn05-play").disabled = true;
                 document.getElementById("btn05-pause").disabled = false;
                 slide05.animInterval = setInterval(() => {
-                    if (slide05.centerCol + 1 + slide05.RADIUS > slide05.COLS) {
+                    if (slide05.centerRow > slide05.ROWS - 1 - slide05.RADIUS) {
                         pauseSlide05Demo();
                         return;
                     }
