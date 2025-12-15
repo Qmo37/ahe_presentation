@@ -1646,8 +1646,7 @@
                                 <div class="equation-label">Definition</div>
                                 $$h_c(g) = \sum_{x=i-r}^{i+r} \mathbf{1}[\mathcal{I}_{x,c} = g]$$
                             </div>
-                            <p>
-                            </p>
+                            <p></p>
                         </div>
                         <div class="card">
                             <div class="card-title">
@@ -1657,8 +1656,7 @@
                                 <div class="equation-label">
                                     Equation (4) — The Magic!
                                 </div>
-                                $$H_{i,j} = \sum_{c=j-r}^{j+r} h_c = h_{j-r} +
-                                h_{j-r+1} + \cdots + h_{j+r}$$
+                                $$H_{i,j} = \sum_{c=j-r}^{j+r} h_c = h_{j-r} + h_{j-r+1} + \cdots + h_{j+r}$$
                             </div>
                             <p>
                                 Kernel histogram = vector sum of column
@@ -2041,8 +2039,7 @@
                             Update Equation — When Window Slides Right
                         </div>
                         <div style="font-size: 1.3em">
-                            $$H_{i,j+1} = H_{i,j} \;{\color{#f87171}-\; h_{j-r}}
-                            \;{\color{#60a5fa}+\; h_{j+r+1}}$$
+                            $$H_{i,j+1} = H_{i,j} \;{\color{#f87171}-\; h_{j-r}} \;{\color{#60a5fa}+\; h_{j+r+1}}$$
                         </div>
                         <p style="margin-top: 15px; color: #94a3b8">
                             Subtract
@@ -2477,9 +2474,7 @@
                             </div>
                             <div class="equation-box">
                                 <div class="equation-label">Equation 7</div>
-                                $$C(g) = \begin{cases} \sum_{k=0}^{g} H(k) &
-                                \text{if } g < L/2 \\ n - \sum_{k=g+1}^{L-1}
-                                H(k) & \text{if } g \geq L/2 \end{cases}$$
+                                $$C(g) = \begin{cases} \sum_{k=0}^{g} H(k) & \text{if } g < L/2 \\ n - \sum_{k=g+1}^{L-1} H(k) & \text{if } g \geq L/2 \end{cases}$$
                             </div>
                             <p>
                                 <strong>Idea:</strong> Sum from whichever end is
@@ -2642,8 +2637,7 @@
                                 cumulative $\hat{C}(g)$ directly in one pass!
                             </p>
                             <div class="equation-box" style="font-size: 0.9em">
-                                $$\hat{C}(g) = \sum_{k=0}^{g} \min(H(k), \beta)
-                                + \frac{g+1}{L} \cdot E$$
+                                $$\hat{C}(g) = \sum_{k=0}^{g} \min(H(k), \beta) + \frac{g+1}{L} \cdot E$$
                             </div>
                             <p style="font-size: 0.85em">
                                 Where $E$ = total excess from all clipped bins
@@ -3120,8 +3114,7 @@
                                 <div class="equation-label">
                                     Sum of Absolute Differences
                                 </div>
-                                $$\text{SAD} = \sum_{i,j} |I_{out}^{method}(i,j)
-                                - I_{out}^{baseline}(i,j)| = 0$$
+                                $$\text{SAD} = \sum_{i,j} |I_{out}^{method}(i,j) - I_{out}^{baseline}(i,j)| = 0$$
                             </div>
                             <p style="font-size: 0.9em; margin-top: 10px">
                                 All optimized methods produce
